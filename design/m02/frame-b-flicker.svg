@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900">
+  <defs>
+    <linearGradient id="wallB" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#171310"/>
+      <stop offset="1" stop-color="#0e0b09"/>
+    </linearGradient>
+    <linearGradient id="floorB" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#181209"/>
+      <stop offset="1" stop-color="#0a0806"/>
+    </linearGradient>
+    <radialGradient id="bulbFlare" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffdfae" stop-opacity="0.95"/>
+      <stop offset="0.25" stop-color="#ffb35c" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#ffb35c" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="poolFaint" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#8a5c2e" stop-opacity="0.45"/>
+      <stop offset="0.6" stop-color="#5c3c1e" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#5c3c1e" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="moonWindowB" cx="0.5" cy="0.35" r="0.9">
+      <stop offset="0" stop-color="#243650"/>
+      <stop offset="1" stop-color="#0f1826"/>
+    </radialGradient>
+    <radialGradient id="monitorGlowB" cx="0.5" cy="0.45" r="0.75">
+      <stop offset="0" stop-color="#274f41"/>
+      <stop offset="1" stop-color="#12291f"/>
+    </radialGradient>
+    <filter id="softB"><feGaussianBlur stdDeviation="18"/></filter>
+  </defs>
+
+  <rect width="1600" height="620" fill="url(#wallB)"/>
+  <polygon points="0,900 1600,900 1480,620 120,620" fill="url(#floorB)"/>
+
+  <!-- first warm burst from swinging lamp -->
+  <ellipse cx="800" cy="330" rx="480" ry="420" fill="url(#bulbFlare)"/>
+
+  <!-- window stays cold -->
+  <g>
+    <rect x="140" y="110" width="250" height="320" fill="#04060b"/>
+    <rect x="155" y="125" width="220" height="290" fill="url(#moonWindowB)"/>
+    <rect x="260" y="125" width="10" height="290" fill="#04060b"/>
+    <rect x="155" y="262" width="220" height="10" fill="#04060b"/>
+    <circle cx="205" cy="185" r="26" fill="#8ea7c9" opacity="0.7"/>
+  </g>
+
+  <!-- door, barely touched by warm light edge -->
+  <g fill="#120d09">
+    <rect x="1310" y="200" width="170" height="560"/>
+    <circle cx="1338" cy="492" r="7" fill="#2b2016"/>
+  </g>
+
+  <!-- shelf emerging -->
+  <g fill="#1c140d">
+    <rect x="960" y="330" width="300" height="14"/>
+    <rect x="985" y="252" width="34" height="78"/>
+    <rect x="1026" y="262" width="28" height="68"/>
+    <rect x="1060" y="256" width="38" height="74"/>
+    <rect x="1120" y="270" width="26" height="60"/>
+    <rect x="1152" y="258" width="32" height="72"/>
+    <circle cx="1215" cy="305" r="24"/>
+  </g>
+
+  <!-- desk + chair emerging, long shadows cast away from lamp -->
+  <g fill="#20160e">
+    <polygon points="700,560 1160,560 1180,586 680,586"/>
+    <rect x="716" y="586" width="20" height="210"/>
+    <rect x="1120" y="586" width="20" height="210"/>
+  </g>
+  <!-- cast shadow streaks on floor (beginning to appear) -->
+  <polygon points="716,796 760,796 900,900 820,900" fill="#050403" opacity="0.7"/>
+  <polygon points="1120,796 1160,796 1330,900 1240,900" fill="#050403" opacity="0.6"/>
+
+  <g fill="#191009">
+    <rect x="565" y="470" width="130" height="18" rx="6"/>
+    <rect x="565" y="360" width="16" height="128"/>
+    <rect x="679" y="360" width="16" height="128"/>
+  </g>
+
+  <!-- monitor: now secondary, still glowing -->
+  <g>
+    <rect x="812" y="376" width="196" height="126" rx="6" fill="#0d1211"/>
+    <rect x="824" y="388" width="172" height="102" fill="url(#monitorGlowB)"/>
+    <rect x="886" y="502" width="46" height="26" fill="#0d1211"/>
+    <rect x="862" y="528" width="94" height="10" rx="4" fill="#0d1211"/>
+    <g fill="#79d9b8" opacity="0.4">
+      <rect x="838" y="400" width="96" height="5"/>
+      <rect x="838" y="414" width="132" height="5"/>
+    </g>
+  </g>
+
+  <!-- lamp mid-swing (~4deg) with first flicker -->
+  <g transform="rotate(4 800 0)">
+    <line x1="800" y1="0" x2="800" y2="232" stroke="#2a2118" stroke-width="5"/>
+    <polygon points="716,306 884,306 842,228 758,228" fill="#241a11"/>
+    <polygon points="716,306 884,306 866,296 734,296" fill="#3d2c1a" opacity="0.9"/>
+    <circle cx="800" cy="322" r="17" fill="#ffe9c0"/>
+  </g>
+  <!-- swing motion ghost -->
+  <g transform="rotate(-3 800 0)" opacity="0.25">
+    <line x1="800" y1="0" x2="800" y2="232" stroke="#2a2118" stroke-width="5"/>
+    <polygon points="716,306 884,306 842,228 758,228" fill="#241a11"/>
+  </g>
+
+  <!-- pull cord trailing with swing -->
+  <path d="M 836 296 Q 852 380 862 460" stroke="#3a2d1e" stroke-width="4" fill="none"/>
+  <circle cx="863" cy="464" r="8" fill="#4a3a26"/>
+
+  <!-- faint warm pool starting on floor -->
+  <ellipse cx="800" cy="640" rx="560" ry="200" fill="url(#poolFaint)" filter="url(#softB)"/>
+</svg>

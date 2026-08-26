@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900">
+  <!-- UI OVERLAY CONCEPT: modern DOM living over Frame C (lamp fully on) -->
+  <defs>
+    <radialGradient id="uiWall" cx="0.5" cy="0.36" r="1.05">
+      <stop offset="0" stop-color="#4a3826"/>
+      <stop offset="1" stop-color="#1c1510"/>
+    </radialGradient>
+    <linearGradient id="uiFloor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3d2c1c"/>
+      <stop offset="1" stop-color="#171009"/>
+    </linearGradient>
+    <linearGradient id="scrimBottom" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.72"/>
+    </linearGradient>
+    <filter id="blurUi"><feGaussianBlur stdDeviation="10"/></filter>
+  </defs>
+
+  <!-- simplified scene background (frame C) -->
+  <rect width="1600" height="620" fill="url(#uiWall)"/>
+  <polygon points="0,900 1600,900 1480,620 120,620" fill="url(#uiFloor)"/>
+  <rect x="140" y="110" width="250" height="320" fill="#101a29"/>
+  <rect x="1310" y="204" width="170" height="556" fill="#3a2a1c"/>
+  <polygon points="700,560 1160,560 1180,586 680,586" fill="#7a5638"/>
+  <rect x="824" y="388" width="172" height="102" fill="#2b5a4a"/>
+  <g>
+    <line x1="800" y1="0" x2="800" y2="228" stroke="#2e241a" stroke-width="6"/>
+    <polygon points="712,310 888,310 844,226 756,226" fill="#211811"/>
+    <circle cx="800" cy="322" r="17" fill="#fff3d8"/>
+  </g>
+
+  <!-- scrim under content zone (guarantees AA contrast) -->
+  <rect x="0" y="520" width="1600" height="380" fill="url(#scrimBottom)"/>
+
+  <!-- NAV top-right: plain mono text, no boxes -->
+  <g font-family="'IBM Plex Mono', ui-monospace, monospace" font-size="15" letter-spacing="2">
+    <text x="1058" y="56" fill="#e8dcc4">01 WORK</text>
+    <text x="1178" y="56" fill="#9c8f78">02 ABOUT</text>
+    <text x="1312" y="56" fill="#9c8f78">03 EXP</text>
+    <text x="1432" y="56" fill="#9c8f78">04 CONTACT</text>
+    <rect x="1058" y="66" width="66" height="2" fill="#f5a742"/>
+    <!-- sound toggle -->
+    <g transform="translate(962,42)">
+      <path d="M 0 6 h 8 l 8 -6 v 20 l -8 -6 h -8 z" fill="none" stroke="#9c8f78" stroke-width="2"/>
+      <line x1="20" y1="4" x2="30" y2="16" stroke="#9c8f78" stroke-width="2"/>
+      <line x1="30" y1="4" x2="20" y2="16" stroke="#9c8f78" stroke-width="2"/>
+    </g>
+  </g>
+
+  <!-- SECTION LABEL: terminal accent, small -->
+  <text x="120" y="560" font-family="'IBM Plex Mono', ui-monospace, monospace"
+        font-size="14" letter-spacing="4" fill="#f5a742">// PROJECTS</text>
+
+  <!-- HERO NAME (intro state variant): display serif, low position -->
+  <g font-family="Georgia, 'Times New Roman', serif">
+    <text x="116" y="700" font-size="92" fill="#f2e7d0" font-weight="bold">Emil Sandoval</text>
+  </g>
+  <text x="122" y="742" font-family="'IBM Plex Mono', ui-monospace, monospace"
+        font-size="18" letter-spacing="3" fill="#c9b48a">SOFTWARE DEVELOPER · AI</text>
+
+  <!-- PROJECT CARD: translucent + hairline border, no HUD chrome -->
+  <g>
+    <rect x="1020" y="600" width="460" height="200" rx="6"
+          fill="#14100c" fill-opacity="0.55" stroke="#ffffff" stroke-opacity="0.14"/>
+    <!-- thumbnail placeholder -->
+    <rect x="1040" y="622" width="180" height="120" rx="4" fill="#2b5a4a" opacity="0.35"/>
+    <rect x="1040" y="622" width="180" height="120" rx="4" fill="none" stroke="#ffffff" stroke-opacity="0.12"/>
+    <text x="1244" y="652" font-family="Georgia, serif" font-size="26" fill="#f2e7d0">Project Name</text>
+    <text x="1244" y="682" font-family="'IBM Plex Mono', ui-monospace, monospace"
+          font-size="13" letter-spacing="1" fill="#f5a742">RAG PIPELINE · TYPESCRIPT</text>
+    <text x="1244" y="710" font-family="system-ui, sans-serif" font-size="15" fill="#cfc2a8">One-line problem this project solves.</text>
+    <g font-family="'IBM Plex Mono', ui-monospace, monospace" font-size="13" letter-spacing="1">
+      <text x="1244" y="752" fill="#e8dcc4" text-decoration="underline">DEMO →</text>
+      <text x="1350" y="752" fill="#e8dcc4" text-decoration="underline">REPO →</text>
+    </g>
+  </g>
+
+  <!-- SCROLL HINT bottom-center -->
+  <g font-family="'IBM Plex Mono', ui-monospace, monospace" font-size="13" letter-spacing="4" fill="#9c8f78">
+    <text x="736" y="862">SCROLL</text>
+    <line x1="800" y1="806" x2="800" y2="846" stroke="#9c8f78" stroke-width="2"/>
+    <polygon points="793,842 807,842 800,854" fill="#9c8f78"/>
+  </g>
+
+  <!-- FOCUS STATE demo (keyboard tab on nav item) -->
+  <rect x="1424" y="38" width="150" height="30" fill="none" stroke="#f5a742" stroke-width="2" rx="4"/>
+</svg>

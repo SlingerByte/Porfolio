@@ -1,0 +1,1563 @@
+/* ============================================================
+   FOCUS LAYER (M5.10 architecture)
+
+   ROOM  → pure 3D + diegetic textures. The only DOM is ONE
+           docked affordance button — never content over an object.
+   FOCUS → full reading interfaces: FLIP expansion from the
+           object's projected quad, dimmed room behind.
+
+   NO EMBEDDED UI: there are no anchored surfaces, no sheets,
+   no DOM projected onto meshes anywhere in this file.
+   ============================================================ */
+
+.spatial-layer {
+  position: fixed;
+  inset: 0;
+  /* above the document flow: focus panels must never be painted under
+     hero/section content (M5.9.1 layering fix) */
+  z-index: calc(var(--z-overlay) + 1);
+  pointer-events: none;
+
+  /* M5.11 — focus panels never slide under the fixed navbar:
+     floor = nav offset + nav row + safe area + breathing room */
+  --focus-top-min: calc(var(--space-4) + 30px + env(safe-area-inset-top, 0px) + 8px);
+  --focus-bottom-min: max(16px, env(safe-area-inset-bottom, 0px));
+}
+
+/* ---------------- ROOM affordance — the single docked action ---------- */
+
+.room-affordance {
+  position: absolute;
+  left: 50%;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  pointer-events: auto;
+}
+
+.room-affordance-btn {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: #ffd9a0;
+  background: rgba(10, 8, 5, 0.72);
+  border: 1px solid rgba(245, 167, 66, 0.55);
+  border-radius: var(--radius-sm);
+  padding: 9px 18px;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: background var(--transition-fast), filter var(--transition-fast);
+}
+
+.room-affordance-btn:hover,
+.room-affordance-btn:focus-visible {
+  background: rgba(245, 167, 66, 0.16);
+  filter: brightness(1.15);
+  outline: var(--focus-ring);
+  outline-offset: 3px;
+}
+
+/* ---------------- monitor focus — terminal reading interface ---------- */
+
+.monitor-ui {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  color: #e8dcc4;
+  font-family: var(--font-mono);
+  text-align: left;
+}
+
+.monitor-ui-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-bottom: 1px solid rgba(143, 230, 198, 0.16);
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: rgba(143, 230, 198, 0.75);
+  flex: none;
+}
+
+.monitor-ui-dots {
+  display: inline-flex;
+  gap: 5px;
+}
+
+.monitor-ui-dots i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(143, 230, 198, 0.28);
+}
+
+.monitor-ui-path {
+  flex: 1;
+  min-width: 0; /* allow the path to shrink so CLOSE never clips out */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.monitor-ui-action {
+  border: 1px solid rgba(245, 167, 66, 0.45);
+  background: transparent;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 4px 9px;
+  border-radius: 3px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.monitor-ui-action:hover,
+.monitor-ui-action:focus-visible {
+  background: rgba(245, 167, 66, 0.12);
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.monitor-ui--focus {
+  background:
+    radial-gradient(120% 70% at 50% -10%, rgba(255, 179, 92, 0.08), transparent 60%),
+    linear-gradient(165deg, rgba(18, 26, 21, 0.92), rgba(9, 13, 11, 0.96));
+}
+
+.monitor-ui-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: clamp(24px, 4vh, 44px) clamp(28px, 5vw, 64px);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(143, 230, 198, 0.3) transparent;
+}
+
+.monitor-ui-body:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: -4px;
+}
+
+.term-prompt {
+  color: var(--accent);
+  font-size: 11px;
+  letter-spacing: 3px;
+  margin: 30px 0 12px;
+  opacity: 0.85;
+}
+
+.term-prompt::before {
+  content: '» ';
+  opacity: 0.55;
+}
+
+.term-name {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 4vw, 40px);
+  color: #f7efdd;
+  line-height: 1.2;
+}
+
+.term-role {
+  font-family: var(--font-body);
+  font-size: 14px;
+  letter-spacing: 3px;
+  color: #e8b366;
+  margin-top: 4px;
+}
+
+.term-tagline {
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  color: rgba(232, 220, 196, 0.75);
+  max-width: 62ch;
+  margin-top: 10px;
+}
+
+.term-timeline {
+  list-style: none;
+  padding: 0;
+}
+
+.term-timeline li + li {
+  margin-top: 12px;
+}
+
+.term-timeline li {
+  border-left: 2px solid rgba(245, 167, 66, 0.35);
+  padding-left: 20px;
+  margin-top: 22px;
+}
+
+.term-timeline h3 {
+  font-family: var(--font-display);
+  font-weight: normal;
+  font-size: 22px;
+  color: #f3ead6;
+}
+
+.term-org {
+  font-family: var(--font-body);
+  font-size: 13px;
+  letter-spacing: 1px;
+  color: rgba(232, 179, 102, 0.85);
+  margin-top: 3px;
+}
+
+.term-summary {
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.75;
+  color: rgba(240, 231, 212, 0.88);
+  max-width: 68ch;
+  margin-top: 8px;
+}
+
+.term-education {
+  list-style: none;
+  padding: 0;
+}
+
+.term-education li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: rgba(232, 220, 196, 0.85);
+  padding: 8px 0;
+  border-bottom: 1px dashed rgba(143, 230, 198, 0.12);
+}
+
+.term-meta {
+  color: rgba(143, 230, 198, 0.6);
+  font-size: 10.5px;
+}
+
+.term-idle {
+  margin-top: 16px;
+  color: #8fe6c6;
+  font-size: 12px;
+}
+
+/* live terminal: the blinking cursor is a real, editable prompt */
+.term-input-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.term-input-row .term-prompt {
+  margin: 0;
+}
+
+.term-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: #e8dcc4;
+  caret-color: var(--accent);
+}
+
+/* when empty, the blinking block cursor right after "$" is the caret */
+.term-input.is-empty {
+  caret-color: transparent;
+}
+
+.term-input:focus {
+  outline: none;
+}
+
+.term-io {
+  margin-top: 6px;
+}
+
+.term-out {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  color: rgba(143, 230, 198, 0.85);
+  white-space: pre-wrap;
+}
+
+@keyframes caret-blink {
+  0%, 55% { opacity: 1; }
+  56%, 100% { opacity: 0; }
+}
+
+.term-caret {
+  animation: caret-blink 1.1s step-end infinite;
+  margin-left: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .term-caret { animation: none; }
+}
+
+/* ---------------- book focus — an open book on a dark reading surface --- */
+
+.book-ui {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: #26190c;
+  font-family: var(--font-body);
+  text-align: left;
+  position: relative;
+  /* dark reading desk — the book sits on this surface */
+  background:
+    /* subtle desk texture — faint wood grain */
+    repeating-linear-gradient(80deg,
+      rgba(80, 55, 25, 0.03) 0 1px, transparent 1px 6px),
+    repeating-linear-gradient(170deg,
+      rgba(60, 40, 18, 0.02) 0 2px, transparent 2px 8px),
+    radial-gradient(ellipse at 50% 60%, #1e150d 0%, #13100a 100%);
+}
+
+.book-ui--focus {
+  background:
+    repeating-linear-gradient(80deg,
+      rgba(80, 55, 25, 0.03) 0 1px, transparent 1px 6px),
+    repeating-linear-gradient(170deg,
+      rgba(60, 40, 18, 0.02) 0 2px, transparent 2px 8px),
+    radial-gradient(ellipse at 50% 60%, #1e150d 0%, #13100a 100%);
+}
+
+/* floating controls sit on the desk surface alongside the book */
+.book-ui-title {
+  position: absolute;
+  top: clamp(10px, 1.5vh, 16px);
+  left: clamp(14px, 2vw, 24px);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: rgba(244, 236, 214, 0.35);
+  z-index: 2;
+}
+
+.book-ui-indicator {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: rgba(244, 236, 214, 0.5);
+}
+
+.book-ui-action {
+  position: absolute;
+  top: clamp(10px, 1.5vh, 16px);
+  right: clamp(14px, 2vw, 24px);
+  border: 1px solid rgba(244, 236, 214, 0.2);
+  background: rgba(26, 18, 10, 0.7);
+  backdrop-filter: blur(4px);
+  color: rgba(244, 236, 214, 0.6);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 5px 12px;
+  border-radius: 3px;
+  cursor: pointer;
+  white-space: nowrap;
+  z-index: 2;
+}
+
+.book-ui-action:hover,
+.book-ui-action:focus-visible {
+  background: rgba(244, 236, 214, 0.08);
+  border-color: rgba(244, 236, 214, 0.4);
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* ---------------- the open book: two pages with perspective ---------- */
+
+/* the reading volume: perspective context + projected shadow */
+.book-body {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  perspective: 2600px;
+  perspective-origin: 50% 42%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* the desk stays visible around the book — it is an object, not a panel */
+  padding: clamp(8px, 1.5vh, 16px) clamp(16px, 3vw, 48px);
+}
+
+/* the book as a physical volume: fixed page proportions, desk margin around */
+.book-volume {
+  position: relative;
+  height: min(100%, 640px);
+  width: auto;
+  aspect-ratio: 1.62 / 1;
+  max-width: 100%;
+  transform-style: preserve-3d;
+}
+
+/* the spread: a physical open book with page curvature */
+.book-ui-spread {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(122, 92, 51, 0.35) transparent;
+  /* paper base — warm ivory */
+  background: #f0e8d2;
+  /* the book block: stacked page edges on all four sides + desk shadow */
+  box-shadow:
+    /* page block — top edge */
+    0 -4px 0 -1px rgba(96, 74, 40, 0.22),
+    0 -3px 0 -1px rgba(200, 185, 155, 0.65),
+    0 -2px 0 -1px rgba(96, 74, 40, 0.18),
+    0 -1px 0 -1px rgba(200, 185, 155, 0.5),
+    /* page block — bottom edge */
+    0 2px 0 -1px rgba(200, 185, 155, 0.65),
+    0 3px 0 -1px rgba(96, 74, 40, 0.22),
+    /* page block — left and right */
+    -4px 0 0 -1px rgba(96, 74, 40, 0.25),
+    -3px 0 0 0 rgba(200, 185, 155, 0.6),
+    -2px 0 0 0 rgba(96, 74, 40, 0.2),
+    -1px 0 0 0 rgba(200, 185, 155, 0.5),
+    4px 0 0 -1px rgba(96, 74, 40, 0.25),
+    3px 0 0 0 rgba(200, 185, 155, 0.6),
+    2px 0 0 0 rgba(96, 74, 40, 0.2),
+    1px 0 0 0 rgba(200, 185, 155, 0.5),
+    /* projected shadow on the dark desk surface */
+    0 18px 36px rgba(0, 0, 0, 0.55),
+    0 6px 14px rgba(0, 0, 0, 0.35),
+    0 1px 3px rgba(0, 0, 0, 0.4);
+  /* the volume leans back on the desk, pages open toward the reader */
+  transform: rotateX(4deg);
+  transform-origin: 50% 100%;
+}
+
+.book-ui-spread:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: -4px;
+}
+
+/* each page: a real opaque sheet with paper texture */
+.book-page {
+  position: relative;
+  padding: clamp(18px, 2.5vh, 32px) clamp(18px, 2.2vw, 30px);
+  min-width: 0;
+  /* paper with realistic grain — fiber lines + subtle tone variation */
+  background:
+    /* fine horizontal fiber lines */
+    repeating-linear-gradient(0deg,
+      rgba(140, 110, 60, 0.03) 0 1px, transparent 1px 3px),
+    /* subtle vertical texture variation */
+    repeating-linear-gradient(90deg,
+      rgba(120, 95, 50, 0.015) 0 2px, transparent 2px 7px),
+    /* very faint age spots / tonal variation */
+    radial-gradient(ellipse at 30% 70%, rgba(180, 150, 90, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 30%, rgba(160, 130, 70, 0.04) 0%, transparent 40%),
+    /* base warm ivory */
+    linear-gradient(175deg, #f2ead8 0%, #ede2c8 40%, #e8dcbe 100%);
+}
+
+/* stacked page edges on the outer sides — the block of pages under the
+   top leaf, not a single card */
+.book-page--left::before,
+.book-page--right::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  width: 5px;
+  pointer-events: none;
+}
+
+.book-page--left::before {
+  left: 0;
+  border-left: 1px solid rgba(96, 74, 40, 0.35);
+  background:
+    repeating-linear-gradient(to right,
+      rgba(180, 160, 120, 0.5) 0 1px,
+      rgba(96, 74, 40, 0.25) 1px 1.5px,
+      rgba(200, 185, 155, 0.4) 1.5px 2.5px);
+}
+
+/* outer bottom corner curl — the page lifts at the corner, like a real
+   open book resting on a desk */
+.book-page--left::after,
+.book-page--right::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  width: 40px;
+  height: 30px;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 100% 100%, rgba(35, 22, 8, 0.22), transparent 68%);
+  opacity: 0.55;
+}
+
+.book-page--left::after {
+  left: 0;
+  transform: scaleX(-1);
+}
+
+.book-page--right::before {
+  right: 0;
+}
+
+.book-page--right::after {
+  right: 0;
+  border-right: 1px solid rgba(96, 74, 40, 0.35);
+  background:
+    repeating-linear-gradient(to left,
+      rgba(180, 160, 120, 0.5) 0 1px,
+      rgba(96, 74, 40, 0.25) 1px 1.5px,
+      rgba(200, 185, 155, 0.4) 1.5px 2.5px);
+}
+
+/* LEFT PAGE: curves away from spine (toward the reader on the left) */
+.book-page--left {
+  border-radius: 3px 0 0 3px;
+  /* page curves toward the reader on the left edge, binding shadow on right */
+  transform: rotateY(2deg);
+  transform-origin: right center;
+  box-shadow:
+    /* gutter shadow — deep binding valley on the right edge */
+    inset -24px 0 30px -14px rgba(35, 22, 8, 0.5),
+    inset -3px 0 0 rgba(35, 22, 8, 0.15),
+    /* left edge page curl — lifts toward the reader */
+    inset 8px 0 12px -6px rgba(35, 22, 8, 0.08),
+    /* outer edge highlight — page lifts off the desk */
+    2px 0 4px -1px rgba(0, 0, 0, 0.12);
+}
+
+/* RIGHT PAGE: curves away from spine (toward the reader on the right) */
+.book-page--right {
+  border-radius: 0 3px 3px 0;
+  /* page curves toward the reader on the right edge, binding shadow on left */
+  transform: rotateY(-2deg);
+  transform-origin: left center;
+  box-shadow:
+    /* gutter shadow — deep binding valley on the left edge */
+    inset 24px 0 30px -14px rgba(35, 22, 8, 0.5),
+    inset 3px 0 0 rgba(35, 22, 8, 0.15),
+    /* right edge page curl — lifts toward the reader */
+    inset -8px 0 12px -6px rgba(35, 22, 8, 0.08),
+    /* outer edge highlight — page lifts off the desk */
+    -2px 0 4px -1px rgba(0, 0, 0, 0.12);
+}
+
+/* SPINE: the physical crease where pages meet — the visual anchor */
+.book-spine {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 32px;
+  transform: translateX(-50%);
+  z-index: 1;
+  /* deep binding crease — darker center, softer edges */
+  background: linear-gradient(90deg,
+    rgba(35, 22, 8, 0) 0%,
+    rgba(35, 22, 8, 0.15) 20%,
+    rgba(30, 18, 6, 0.45) 45%,
+    rgba(25, 15, 5, 0.6) 50%,
+    rgba(30, 18, 6, 0.45) 55%,
+    rgba(35, 22, 8, 0.15) 80%,
+    rgba(35, 22, 8, 0) 100%);
+  /* thin binding thread lines */
+  border-left: 1px solid rgba(80, 55, 25, 0.12);
+  border-right: 1px solid rgba(80, 55, 25, 0.12);
+  pointer-events: none;
+  /* subtle凹陷 */
+  box-shadow:
+    inset 0 0 8px rgba(30, 18, 6, 0.3),
+    0 0 4px rgba(30, 18, 6, 0.15);
+}
+
+/* ---------------- the turning leaf (M5.11): a real page turn ----------- */
+
+/* NEXT: the right leaf rotates LEFT around the spine.
+   PREV: the left leaf rotates RIGHT around the spine.
+   Perspective comes from .book-body; GSAP animates the 3D transform with
+   a two-phase physics (lift + bow, then settle); reduced motion never
+   mounts the leaf. */
+
+.book-leaf {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  transform-style: preserve-3d;
+  will-change: transform;
+  z-index: 3;
+}
+
+.book-leaf--next {
+  left: 50%;
+  right: 0;
+  transform-origin: left center;
+}
+
+.book-leaf--prev {
+  left: 0;
+  right: 50%;
+  transform-origin: right center;
+}
+
+.book-leaf-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  overflow: hidden;
+  /* M7.2: paper grain on the turning leaf */
+  background:
+    repeating-linear-gradient(0deg,
+      rgba(140, 110, 60, 0.025) 0 1px, transparent 1px 4px),
+    linear-gradient(#f0e6d0, #e8dcc0);
+}
+
+/* the paper bows through the air: a curvature gradient that swells as the
+   leaf lifts and flattens as it lands — animated by GSAP in LeafElement */
+.book-leaf-bend {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background:
+    linear-gradient(90deg,
+      rgba(40, 28, 12, 0.28) 0%,
+      rgba(40, 28, 12, 0) 45%,
+      rgba(255, 250, 240, 0.4) 100%);
+  opacity: 0;
+}
+
+.book-leaf--prev .book-leaf-bend {
+  background:
+    linear-gradient(270deg,
+      rgba(40, 28, 12, 0.28) 0%,
+      rgba(40, 28, 12, 0) 45%,
+      rgba(255, 250, 240, 0.4) 100%);
+}
+
+/* the back of the leaf: paper with a faint show-through of ink */
+.book-leaf-back {
+  transform: rotateY(180deg);
+  background:
+    repeating-linear-gradient(0deg, rgba(96, 74, 40, 0.04) 0 2px, transparent 2px 6px),
+    repeating-linear-gradient(0deg,
+      rgba(140, 110, 60, 0.025) 0 1px, transparent 1px 4px),
+    linear-gradient(#f2eada, #ebe0ca);
+}
+
+/* dynamic shading: the leaf darkens as it lifts toward vertical */
+.book-leaf-front::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(40, 28, 12, 0.32), rgba(40, 28, 12, 0.02) 55%);
+  animation: leaf-shade 800ms ease both;
+}
+
+.book-leaf--prev .book-leaf-front::after {
+  background: linear-gradient(270deg, rgba(40, 28, 12, 0.32), rgba(40, 28, 12, 0.02) 55%);
+}
+
+@keyframes leaf-shade {
+  0% { opacity: 0.15; }
+  50% { opacity: 1; }
+  100% { opacity: 0.2; }
+}
+
+/* ghost content printed on the turning leaf */
+.book-leaf-paper {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+}
+
+.book-leaf-paper--left {
+  align-items: flex-start;
+  text-align: left;
+}
+
+.book-leaf-paper--right {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.book-leaf-title {
+  font-family: var(--font-display);
+  font-size: clamp(18px, 3.4vh, 30px);
+  color: rgba(51, 36, 15, 0.82);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .book-leaf-front::after { animation: none; opacity: 0; }
+}
+
+.book-kicker {
+  font-family: var(--font-mono);
+  font-size: clamp(9px, 1vh, 11px);
+  letter-spacing: 3px;
+  color: #a08553;
+  text-transform: uppercase;
+}
+
+.book-num {
+  font-family: var(--font-display);
+  font-size: clamp(26px, 5vh, 46px);
+  color: rgba(160, 133, 83, 0.55);
+  line-height: 1;
+  margin-top: 4px;
+}
+
+.book-project-title {
+  font-family: var(--font-display);
+  font-weight: normal;
+  font-size: clamp(24px, 4.4vh, 40px);
+  line-height: 1.02;
+  margin: 2px 0 10px;
+}
+
+.book-attribution {
+  font-family: var(--font-mono);
+  font-size: clamp(9px, 1.2vh, 11px);
+  letter-spacing: 1.5px;
+  color: rgba(44, 35, 24, 0.6);
+  margin-bottom: 14px;
+}
+
+.book-tags {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 14px;
+  padding: 0;
+}
+
+.book-tags li {
+  font-family: var(--font-mono);
+  font-size: clamp(8px, 1vh, 10px);
+  letter-spacing: 1px;
+  border: 1px solid rgba(44, 35, 24, 0.3);
+  border-radius: 999px;
+  padding: 3px 9px;
+  color: rgba(44, 35, 24, 0.75);
+}
+
+.book-role {
+  font-family: var(--font-mono);
+  font-size: clamp(9px, 1.2vh, 11px);
+  letter-spacing: 1px;
+  color: rgba(44, 35, 24, 0.7);
+}
+
+.book-case-section p:last-child {
+  font-size: clamp(13px, 1.8vh, 15px);
+  line-height: 1.65;
+  margin-bottom: 12px;
+  color: rgba(44, 35, 24, 0.92);
+}
+
+.book-case-label {
+  font-family: var(--font-mono);
+  font-size: clamp(8.5px, 1.1vh, 10px);
+  letter-spacing: 2px;
+  color: #a08553;
+  margin-bottom: 3px;
+}
+
+.book-stack {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 4px 0 0;
+  padding: 0;
+}
+
+.book-stack li {
+  font-family: var(--font-mono);
+  font-size: clamp(9px, 1.2vh, 11px);
+  letter-spacing: 1px;
+  border: 1px solid rgba(44, 35, 24, 0.35);
+  border-radius: 999px;
+  padding: 3px 9px;
+  color: rgba(38, 25, 12, 0.85);
+  background: rgba(255, 250, 236, 0.6);
+}
+
+.book-stack li.book-stack-more {
+  background: rgba(44, 35, 24, 0.08);
+}
+
+.book-stack-label {
+  margin-top: 16px;
+}
+
+.book-links {
+  font-family: var(--font-mono);
+  font-size: clamp(9px, 1.2vh, 11px);
+  letter-spacing: 1px;
+  color: #5d4325;
+}
+
+.book-links a {
+  display: inline-block;
+  margin-top: 6px;
+  margin-right: 6px;
+  padding: 5px 12px;
+  border: 1px solid rgba(93, 67, 37, 0.55);
+  border-radius: 3px;
+  color: #5d4325;
+  background: rgba(255, 250, 236, 0.6);
+  text-decoration: none;
+  font-weight: bold;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition:
+    background 150ms ease,
+    color 150ms ease,
+    border-color 150ms ease;
+}
+
+.book-links a:hover,
+.book-links a:focus-visible {
+  background: #5d4325;
+  border-color: #5d4325;
+  color: #f7efdd;
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.evidence-partial {
+  color: #8a5a38;
+}
+
+/* printed folio: a real page number lives on each physical page */
+.book-folio {
+  font-family: var(--font-mono);
+  font-size: clamp(8px, 1.1vh, 10px);
+  letter-spacing: 2px;
+  color: rgba(44, 35, 24, 0.45);
+  margin-top: auto;
+  padding-top: 12px;
+  text-align: right;
+}
+
+.book-page--left .book-folio {
+  text-align: left;
+}
+
+/* double editorial rule printed on the turning leaf and cover ghosts */
+.book-cover-rule {
+  width: 46%;
+  height: 5px;
+  border-top: 1px solid rgba(201, 151, 63, 0.75);
+  border-bottom: 1px solid rgba(201, 151, 63, 0.4);
+  margin: clamp(2px, 0.7vh, 7px) 0;
+}
+
+/* ---------------- intro spread (M7.3b): first open double page ---------- */
+
+/* left page: editorial title page */
+.book-page--intro-left {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: clamp(6px, 1vh, 12px);
+}
+
+/* pixel-art corner ornaments — small diegetic marks on paper */
+.book-corner-ornament {
+  position: absolute;
+  font-family: var(--font-mono);
+  font-size: clamp(8px, 1.2vh, 12px);
+  color: rgba(160, 133, 83, 0.25);
+  line-height: 1;
+  pointer-events: none;
+}
+
+.book-corner-ornament--tl {
+  top: clamp(8px, 1.5vh, 16px);
+  left: clamp(8px, 1.5vw, 16px);
+}
+
+.book-corner-ornament--tr {
+  top: clamp(8px, 1.5vh, 16px);
+  right: clamp(8px, 1.5vw, 16px);
+}
+
+/* pixel-art ornament — small accent printed on paper */
+.book-intro-ornament {
+  font-size: clamp(8px, 1.2vh, 12px);
+  color: rgba(160, 133, 83, 0.45);
+  letter-spacing: 2px;
+  margin-bottom: clamp(2px, 0.4vh, 6px);
+}
+
+.book-intro-title {
+  font-family: var(--font-display);
+  font-weight: normal;
+  font-size: clamp(28px, 6vh, 52px);
+  line-height: 1.02;
+  letter-spacing: 2px;
+  color: #2a1c0a;
+}
+
+/* double editorial rule — classic book typography */
+.book-intro-rule {
+  display: block;
+  width: 40%;
+  height: 5px;
+  border-top: 1px solid rgba(122, 92, 51, 0.55);
+  border-bottom: 1px solid rgba(122, 92, 51, 0.25);
+  margin: clamp(4px, 0.8vh, 10px) 0;
+}
+
+.book-intro-tagline {
+  font-family: var(--font-body);
+  font-size: clamp(13px, 1.8vh, 16px);
+  line-height: 1.6;
+  color: rgba(44, 35, 24, 0.82);
+  max-width: 28ch;
+}
+
+/* secondary editorial note — smaller, italic */
+.book-intro-note {
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: clamp(11px, 1.4vh, 13px);
+  line-height: 1.55;
+  color: rgba(44, 35, 24, 0.55);
+  max-width: 26ch;
+}
+
+/* pixel-art decorative divider */
+.book-intro-divider {
+  display: block;
+  font-size: clamp(8px, 1.1vh, 10px);
+  letter-spacing: 4px;
+  color: rgba(160, 133, 83, 0.4);
+  margin: clamp(4px, 0.8vh, 8px) 0;
+  text-align: left;
+}
+
+.book-intro-divider--center {
+  text-align: center;
+}
+
+.book-intro-divider--subtle {
+  color: rgba(160, 133, 83, 0.25);
+  letter-spacing: 6px;
+}
+
+.book-intro-stat {
+  font-family: var(--font-mono);
+  font-size: clamp(10px, 1.3vh, 12px);
+  letter-spacing: 2px;
+  color: rgba(44, 35, 24, 0.6);
+  margin-top: clamp(4px, 0.8vh, 10px);
+}
+
+.book-intro-stat-num {
+  font-size: clamp(18px, 3vh, 26px);
+  color: rgba(160, 133, 83, 0.65);
+  font-family: var(--font-display);
+  letter-spacing: 1px;
+}
+
+.book-intro-motto {
+  font-family: var(--font-mono);
+  font-size: clamp(8px, 1.1vh, 10px);
+  letter-spacing: 3px;
+  color: #a08553;
+  margin-top: clamp(2px, 0.5vh, 6px);
+}
+
+/* personality line — small, secondary, human */
+.book-intro-personality {
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: clamp(10px, 1.3vh, 12px);
+  color: rgba(44, 35, 24, 0.45);
+  margin-top: clamp(4px, 0.8vh, 8px);
+}
+
+/* author signature — small, printed at bottom of page */
+.book-intro-author {
+  font-family: var(--font-mono);
+  font-size: clamp(8px, 1.1vh, 10px);
+  letter-spacing: 2px;
+  color: rgba(44, 35, 24, 0.5);
+  margin-top: clamp(8px, 1.5vh, 16px);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.book-intro-author-role {
+  font-size: clamp(7px, 0.9vh, 9px);
+  letter-spacing: 3px;
+  color: rgba(160, 133, 83, 0.5);
+}
+
+/* right page: editorial foreword */
+.book-page--intro-right {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: clamp(6px, 1vh, 12px);
+}
+
+.book-intro-right-label {
+  font-family: var(--font-mono);
+  font-size: clamp(9px, 1.2vh, 11px);
+  letter-spacing: 3px;
+  color: #a08553;
+  text-transform: uppercase;
+}
+
+/* pixel-art style index rule */
+.book-intro-index-rule {
+  display: block;
+  width: 100%;
+  height: 0;
+  border-top: 1px solid rgba(160, 133, 83, 0.35);
+  margin-bottom: clamp(4px, 0.8vh, 8px);
+}
+
+.book-intro-index-rule::after {
+  content: '▪ ▪ ▪';
+  display: block;
+  font-size: 5px;
+  letter-spacing: 4px;
+  color: rgba(160, 133, 83, 0.3);
+  margin-top: 3px;
+}
+
+/* right page body text — editorial foreword */
+.book-intro-right-body {
+  font-family: var(--font-body);
+  font-size: clamp(12px, 1.6vh, 15px);
+  line-height: 1.65;
+  color: rgba(44, 35, 24, 0.7);
+  max-width: 28ch;
+}
+
+/* right page footer — personality line */
+.book-intro-right-footer {
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: clamp(10px, 1.3vh, 12px);
+  color: rgba(44, 35, 24, 0.4);
+  text-align: center;
+}
+
+/* editorial footer on the index page */
+.book-intro-turn {
+  font-family: var(--font-mono);
+  font-size: clamp(9px, 1.2vh, 11px);
+  letter-spacing: 2px;
+  color: rgba(44, 35, 24, 0.45);
+  margin-top: auto;
+  padding-top: clamp(8px, 1.5vh, 14px);
+}
+
+/* floating navigation: reader controls on the desk surface below the book */
+.book-ui-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  flex: none;
+  padding-top: clamp(10px, 1.5vh, 18px);
+}
+
+.book-nav-btn {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  background: rgba(26, 18, 10, 0.5);
+  border: 1px solid rgba(244, 236, 214, 0.12);
+  border-radius: 3px;
+  padding: 6px 14px;
+  cursor: pointer;
+  color: rgba(244, 236, 214, 0.55);
+  transition: background 150ms, border-color 150ms, color 150ms;
+}
+
+.book-nav-btn:hover:not(:disabled),
+.book-nav-btn:focus-visible:not(:disabled) {
+  background: rgba(244, 236, 214, 0.06);
+  border-color: rgba(244, 236, 214, 0.3);
+  color: rgba(244, 236, 214, 0.8);
+}
+
+.book-nav-btn:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 3px;
+}
+
+.book-nav-btn:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+/* ---------------- skills focus — the corkboard itself ---------------- */
+
+.skills-ui {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  font-family: var(--font-body);
+  text-align: left;
+}
+
+.skills-ui-bar,
+.skills-ui-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  flex: none;
+  /* the board's wooden rails */
+  background: linear-gradient(180deg, #3f2e1c, #332415);
+  color: #e9dcbf;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  position: relative;
+  z-index: 1;
+}
+
+.skills-ui-bar {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.5);
+}
+
+.skills-ui-foot {
+  border-top: 1px solid rgba(0, 0, 0, 0.5);
+  box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.skills-ui-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: #e8b366;
+  flex: 1;
+}
+
+.skills-ui-foot .term-meta {
+  color: rgba(233, 220, 191, 0.72);
+}
+
+/* focused board = the real cork, lit like the 3D board the room shows:
+   the exact PALETTE.cork tone with a warm lamp glow from above and the
+   same speckle texture */
+.skills-ui--focus {
+  background:
+    radial-gradient(110% 80% at 50% 0%, rgba(255, 208, 140, 0.09), transparent 55%),
+    radial-gradient(circle at 14% 22%, rgba(255, 240, 210, 0.06) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 62% 74%, rgba(40, 28, 14, 0.08) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 30% 88%, rgba(255, 240, 210, 0.05) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 82% 16%, rgba(40, 28, 14, 0.07) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 48% 40%, rgba(255, 240, 210, 0.04) 0 1px, transparent 1.5px),
+    linear-gradient(170deg, #5d4b33 0%, #57452e 50%, #4e3e29 100%);
+}
+
+.skills-ui-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  align-content: start;
+  align-items: start;
+  gap: 18px;
+  padding: clamp(20px, 4vh, 36px) clamp(22px, 4vw, 44px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-color: rgba(233, 220, 191, 0.4) transparent;
+}
+
+.skills-ui-body:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: -4px;
+}
+
+/* each skill family is a real pinned post-it — the same three note colors
+   as the 3D board, with a pin and a slight, natural tilt. The tilt ships
+   inline (translate + rotate) so the note can be dragged around the board. */
+.skill-note {
+  position: relative;
+  padding: 26px 16px 16px;
+  box-shadow: 0 5px 12px rgba(20, 12, 4, 0.4);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: box-shadow 0.15s ease;
+}
+
+.skill-note--0 {
+  background: #f2cf7e;
+  color: #3a2c17;
+}
+
+.skill-note--1 {
+  background: #cfe0b4;
+  color: #26301c;
+}
+
+.skill-note--2 {
+  background: #e8b48d;
+  color: #3a2317;
+}
+
+/* a note being dragged lifts off the board */
+.skill-note.is-dragging {
+  cursor: grabbing;
+  z-index: 4;
+  box-shadow: 0 14px 28px rgba(20, 12, 4, 0.5);
+}
+
+/* the "chinche" pulse when the note is dropped into place */
+.skill-note.is-pinned {
+  animation: note-pin 0.32s ease;
+}
+
+@keyframes note-pin {
+  0% { scale: 1; }
+  40% { scale: 1.07; }
+  100% { scale: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skill-note.is-pinned {
+    animation: none;
+  }
+}
+
+/* the pin holding the note to the cork */
+.skill-note::before {
+  content: '';
+  position: absolute;
+  top: 7px;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  background: radial-gradient(
+    circle at 35% 30%,
+    rgba(255, 255, 255, 0.4),
+    rgba(96, 64, 32, 0.9) 55%,
+    rgba(36, 22, 10, 0.95)
+  );
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.45);
+}
+
+.skill-note-family {
+  font-family: var(--font-mono);
+  font-weight: bold;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  border-bottom: 2px solid currentColor;
+  padding-bottom: 6px;
+  opacity: 0.85;
+}
+
+.skill-note-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.skill-note-items li {
+  font-size: 14.5px;
+  line-height: 1.8;
+}
+
+/* ---------------- contact focus — dark, bronze-accented ---------------- */
+
+.door-ui {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  font-family: var(--font-body);
+  color: #efe2c4;
+  background:
+    radial-gradient(120% 100% at 50% 0%, rgba(255, 192, 106, 0.14), transparent 62%),
+    linear-gradient(170deg, rgba(30, 21, 11, 0.92), rgba(16, 11, 6, 0.96));
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.55);
+}
+
+/* brass plate frame: double hairline with corner glow */
+.door-frame {
+  position: absolute;
+  inset: clamp(4px, 0.5vw, 10px);
+  border: 1px solid rgba(217, 167, 72, 0.45);
+  pointer-events: none;
+}
+
+.door-frame::after {
+  content: '';
+  position: absolute;
+  inset: clamp(2px, 0.3vw, 5px);
+  border: 1px solid rgba(217, 167, 72, 0.22);
+}
+
+.door-ui > * {
+  position: relative;
+}
+
+.door-kicker {
+  font-family: var(--font-display);
+  font-size: clamp(22px, 4vw, 36px);
+  letter-spacing: 8px;
+  color: #ffcf87;
+  text-indent: 8px; /* optically recenters tracked-out caps */
+}
+
+.door-rule {
+  width: 42%;
+  height: 4px;
+  border-top: 1px solid rgba(255, 192, 106, 0.6);
+  border-bottom: 1px solid rgba(255, 192, 106, 0.25);
+  margin: clamp(6px, 1.4vh, 14px) 0;
+}
+
+.door-line {
+  font-size: clamp(13px, 1.8vh, 16px);
+  line-height: 1.7;
+  color: rgba(247, 238, 216, 0.92);
+  max-width: 56ch;
+  margin: 0 clamp(16px, 3vw, 32px);
+}
+
+.door-status-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: rgba(232, 179, 102, 0.8);
+  margin-top: clamp(10px, 2vh, 20px);
+}
+
+.door-status {
+  font-family: var(--font-mono);
+  font-size: clamp(12px, 1.6vh, 15px);
+  letter-spacing: 4px;
+  color: #ffc06a;
+}
+
+.door-links {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  padding: 0;
+  margin: clamp(8px, 1.6vh, 16px) 0 0;
+}
+
+.door-links a {
+  color: #ffd9a0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-family: var(--font-mono);
+  font-size: clamp(10px, 1.4vh, 12px);
+  letter-spacing: 1px;
+}
+
+.door-close {
+  margin-top: clamp(12px, 2.4vh, 26px);
+}
+
+/* ---------------- focused display — expansion of the object ------------ */
+
+.spatial-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 6, 8, 0.52);
+  animation: scrim-in 360ms ease both;
+}
+
+@keyframes scrim-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.spatial-focused {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.spatial-focused-panel {
+  position: absolute;
+  pointer-events: auto;
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition:
+    transform 460ms cubic-bezier(0.22, 0.9, 0.26, 1),
+    opacity 300ms ease;
+  will-change: transform;
+  /* depth without a "card frame": one soft drop shadow, no ring */
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+  /* M5.11: JS proposes (--panel-top/--panel-h); the navbar floor WINS */
+  top: max(var(--panel-top, 56px), var(--focus-top-min));
+  height: min(var(--panel-h, 780px), calc(100vh - var(--focus-top-min) - var(--focus-bottom-min)));
+  height: min(var(--panel-h, 780px), calc(100dvh - var(--focus-top-min) - var(--focus-bottom-min)));
+}
+
+/* M7.3: book panel — the book object on a dark desk, no card frame */
+.spatial-focused-panel[data-focus-panel="book"] {
+  border-radius: 0;
+  aspect-ratio: 1.65 / 1;
+  max-height: min(calc(100vh - var(--focus-top-min) - var(--focus-bottom-min) - 12px), 800px);
+  max-height: min(calc(100dvh - var(--focus-top-min) - var(--focus-bottom-min) - 12px), 800px);
+  /* the panel IS the desk surface — dark, not a card */
+  background: transparent;
+  box-shadow: none;
+}
+
+.spatial-focused-panel > * {
+  flex: 1;
+  min-height: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spatial-scrim { animation: none; }
+  .spatial-focused-panel { transition: none; }
+}
+
+/* mobile: touch targets never below 44px */
+@media (max-width: 640px) {
+  .room-affordance-btn,
+  .monitor-ui-action,
+  .book-ui-action,
+  .book-nav-btn {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* M7.3: mobile — the focused book is a plain scrollable spread */
+  .spatial-focused-panel[data-focus-panel="book"] {
+    aspect-ratio: auto;
+    border-radius: 0;
+  }
+
+  .book-ui {
+    /* stretch (not center) so the 100%-wide volume never collapses */
+    align-items: stretch;
+    justify-content: flex-start;
+    padding: 8px;
+  }
+
+  /* flatten the 3D book entirely — plain pages, no perspective */
+  .book-body {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    perspective: none;
+    padding: 0;
+  }
+
+  .book-volume {
+    position: relative;
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    aspect-ratio: auto;
+    transform-style: flat;
+  }
+
+  .book-ui-spread {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    /* each page fills half the spread; long pages grow and the spread scrolls */
+    grid-auto-rows: minmax(min-content, 1fr);
+    transform: none;
+    overflow-y: auto;
+    background: #f0e8d2;
+  }
+
+  .book-page {
+    min-height: 0;
+    border-radius: 0;
+    overflow: hidden;
+  }
+
+  .book-page--left,
+  .book-page--right {
+    transform: none;
+  }
+
+  .book-spine,
+  .book-leaf {
+    display: none;
+  }
+
+  .book-page--left {
+    border-right: 0;
+    border-bottom: 1px solid rgba(44, 35, 24, 0.18);
+    box-shadow: none;
+  }
+
+  .book-page--right {
+    box-shadow: none;
+  }
+
+  /* compact horizontal nav so the book keeps its height — always on top */
+  .book-ui-nav {
+    flex-direction: row;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 0 4px;
+    flex: none;
+    position: relative;
+    z-index: 2;
+    background: rgba(13, 11, 9, 0.92);
+    border-radius: 0 0 6px 6px;
+  }
+
+  /* intro spread on mobile: smaller type, tighter spacing */
+  .book-intro-title {
+    font-size: clamp(22px, 5vh, 36px);
+  }
+
+  /* on touch, notes scroll naturally with the board instead of dragging */
+  .skill-note {
+    touch-action: auto;
+    cursor: default;
+  }
+}

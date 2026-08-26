@@ -1,0 +1,1266 @@
+* {
+  margin: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 72px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+html,
+body {
+  background: var(--bg-dom);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+}
+
+body {
+  overflow-x: hidden;
+}
+
+/* skip link: first tabbable element on the page */
+.skip-link {
+  position: fixed;
+  top: -100px;
+  left: var(--space-4);
+  z-index: var(--z-skip-link);
+  padding: var(--space-2) var(--space-4);
+  background: var(--accent);
+  color: #14100c;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+}
+
+.skip-link:focus-visible {
+  top: var(--space-2);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* fine-pixel upscale: browser upscales the low-res buffer nearest-neighbor */
+canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.scene-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-canvas);
+}
+
+/* ---------------- navigation ---------------- */
+
+.brand,
+.site-nav {
+  position: fixed;
+  top: var(--space-4);
+  z-index: calc(var(--z-overlay) + 2); /* nav stays above the spatial layer */
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  pointer-events: auto;
+}
+
+.brand {
+  left: var(--space-6);
+}
+
+.brand span {
+  color: var(--accent);
+}
+
+.site-nav {
+  right: var(--space-6);
+  display: flex;
+  gap: var(--space-4);
+}
+
+.site-nav a {
+  color: var(--text-secondary);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast);
+}
+
+.site-nav a:hover {
+  color: var(--text-primary);
+}
+
+.site-nav a:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.site-nav a[aria-current='true'] {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* language toggle — a quiet pill in the nav */
+.lang-toggle {
+  margin-left: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid rgba(245, 167, 66, 0.35);
+  border-radius: 999px;
+  padding: 4px 12px;
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.lang-toggle:hover,
+.lang-toggle:focus-visible {
+  background: rgba(245, 167, 66, 0.12);
+  border-color: rgba(245, 167, 66, 0.6);
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .brand {
+    display: none; /* hero already carries the name; nav needs the width */
+  }
+
+  .site-nav {
+    right: var(--space-2);
+    left: var(--space-2);
+    justify-content: center;
+    gap: var(--space-1);
+    flex-wrap: wrap;
+    font-size: 9px;
+    letter-spacing: 0.5px;
+    background: rgba(13, 11, 9, 0.85);
+    padding: var(--space-2) var(--space-2);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-md);
+  }
+
+  .lang-toggle {
+    margin-left: var(--space-1);
+    padding: 3px 9px;
+    font-size: 9px;
+  }
+}
+
+/* ---------------- about this room (M5.8) ---------------- */
+
+/* the room guide owns its own moment: a full-readable band, never pulled up
+   over the hero */
+.section--room {
+  min-height: 55svh;
+  display: grid;
+  place-items: center;
+}
+
+/* the room guide: a warm framed panel that reads like a directory of the
+   space — lamp glow on top, picture-frame corner brackets, a numbered
+   legend mapping each object to the part of the story it holds */
+.room-intro {
+  pointer-events: auto;
+  max-width: 500px;
+  margin: 0 auto;
+  position: relative;
+  padding: clamp(26px, 4vw, 40px) clamp(24px, 4vw, 40px) clamp(20px, 3vw, 26px);
+  color: var(--text-primary);
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgba(255, 179, 92, 0.12), transparent 60%),
+    linear-gradient(180deg, rgba(20, 16, 12, 0.92), rgba(11, 9, 7, 0.88));
+  border: 1px solid rgba(245, 167, 66, 0.3);
+  border-radius: var(--radius-md);
+  box-shadow:
+    inset 0 0 0 1px rgba(245, 167, 66, 0.05),
+    inset 0 1px 0 rgba(255, 220, 170, 0.07),
+    0 20px 44px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(3px);
+  transition:
+    opacity 520ms ease,
+    transform 520ms ease,
+    visibility 0s linear;
+}
+
+/* picture-frame corner brackets */
+.room-intro::before,
+.room-intro::after {
+  content: '';
+  position: absolute;
+  width: 13px;
+  height: 13px;
+  pointer-events: none;
+}
+
+.room-intro::before {
+  top: 7px;
+  left: 7px;
+  border-top: 1px solid rgba(245, 167, 66, 0.55);
+  border-left: 1px solid rgba(245, 167, 66, 0.55);
+}
+
+.room-intro::after {
+  bottom: 7px;
+  right: 7px;
+  border-bottom: 1px solid rgba(245, 167, 66, 0.55);
+  border-right: 1px solid rgba(245, 167, 66, 0.55);
+}
+
+.room-intro h2 {
+  font-family: var(--font-display);
+  font-weight: normal;
+  font-size: clamp(26px, 3.4vw, 38px);
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.room-intro-line {
+  font-family: var(--font-body);
+  font-size: var(--text-size-md);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-2);
+  max-width: 32ch;
+}
+
+.room-intro-note {
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: var(--text-size-sm);
+  color: var(--text-muted);
+  margin-bottom: var(--space-6);
+  max-width: 40ch;
+}
+
+.room-intro-legend {
+  margin: 0 0 var(--space-6);
+  display: grid;
+  gap: var(--space-2);
+}
+
+.room-intro-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-3);
+  align-items: baseline;
+  border-top: 1px dashed rgba(245, 167, 66, 0.16);
+  padding-top: var(--space-2);
+}
+
+.room-intro-row:first-child {
+  border-top: 0;
+}
+
+.room-intro-row dt {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  font-family: var(--font-mono);
+  font-size: var(--text-size-xs);
+  letter-spacing: 2px;
+  color: var(--accent);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.room-intro-num {
+  color: var(--text-muted);
+}
+
+.room-intro-arrow {
+  color: rgba(245, 167, 66, 0.45);
+}
+
+.room-intro-row dd {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--text-size-sm);
+  color: var(--text-secondary);
+}
+
+.room-intro-hint {
+  text-align: center;
+  letter-spacing: 4px;
+  color: var(--accent);
+  margin-top: var(--space-2);
+}
+
+/* scene live = the intro reveals as it scrolls into the room and steps
+   aside once passed. Fallback ([data-scene='off']) keeps it as a normal
+   always-readable panel */
+@media (min-width: 641px) {
+  .portfolio-flow[data-scene='on'] .room-intro {
+    max-width: 460px;
+    margin-inline: auto;
+    padding: 26px 30px;
+  }
+}
+
+/* reveal choreography: hidden at the establishing shot, slides in gently
+   once the journey begins, and steps aside if the reader returns to the top */
+.portfolio-flow .room-intro[data-receded='true'] {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(14px);
+  transition:
+    opacity 520ms ease,
+    transform 520ms ease,
+    visibility 0s linear 520ms;
+}
+
+.portfolio-flow .room-intro[data-receded='false'] {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .room-intro {
+    transition: none;
+    transform: none;
+  }
+}
+
+/* ---------------- contact bubble — the door speaks (M5.10) --------------
+   A square comic-style speech bubble styled like the room guide, with a
+   tail pointing right toward the door. With the scene live it appears the
+   moment the journey reaches the door and slides out once it moves on;
+   fallback keeps it as a normal always-readable panel. */
+
+.contact-bubble {
+  pointer-events: auto;
+  position: relative;
+  max-width: 420px;
+  margin-left: auto;
+  padding: clamp(26px, 4vw, 40px) clamp(24px, 4vw, 40px);
+  color: var(--text-primary);
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgba(255, 179, 92, 0.12), transparent 60%),
+    linear-gradient(180deg, rgba(20, 16, 12, 0.92), rgba(11, 9, 7, 0.88));
+  border: 1px solid rgba(245, 167, 66, 0.32);
+  border-radius: 16px;
+  box-shadow:
+    inset 0 0 0 1px rgba(245, 167, 66, 0.05),
+    inset 0 1px 0 rgba(255, 220, 170, 0.07),
+    0 20px 44px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(3px);
+  transition:
+    opacity 520ms ease,
+    transform 520ms ease,
+    visibility 0s linear;
+}
+
+/* the tail: a rotated square whose point sticks out toward the door */
+.contact-bubble-tail {
+  position: absolute;
+  top: 50%;
+  right: -9px;
+  width: 16px;
+  height: 16px;
+  margin-top: -8px;
+  background: rgba(13, 10, 8, 0.92);
+  border-top: 1px solid rgba(245, 167, 66, 0.32);
+  border-right: 1px solid rgba(245, 167, 66, 0.32);
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+
+.contact-bubble .section-label {
+  margin-bottom: var(--space-3);
+}
+
+.contact-title {
+  font-family: var(--font-display);
+  font-weight: normal;
+  font-size: clamp(24px, 3.2vw, 34px);
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.contact-quip {
+  font-family: var(--font-display);
+  font-weight: normal;
+  font-style: italic;
+  font-size: clamp(16px, 2vw, 19px);
+  line-height: 1.4;
+  color: var(--text-secondary);
+  max-width: 30ch;
+}
+
+/* the nudge that invites the reader to reach out */
+.contact-cta {
+  font-family: var(--font-body);
+  font-size: var(--text-size-sm);
+  line-height: 1.6;
+  color: var(--text-primary);
+  margin-top: var(--space-3);
+  max-width: 32ch;
+}
+
+.contact-rule {
+  display: block;
+  width: 46%;
+  height: 4px;
+  border-top: 1px solid rgba(245, 167, 66, 0.55);
+  border-bottom: 1px solid rgba(245, 167, 66, 0.22);
+  margin: var(--space-4) 0;
+}
+
+.contact-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.contact-pending {
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: var(--text-size-sm);
+  line-height: 1.6;
+  color: var(--text-muted);
+  max-width: 34ch;
+}
+
+/* reveal choreography: hidden away from the door, slides in from the door
+   side the moment the journey reaches it */
+.portfolio-flow .contact-bubble[data-receded='true'] {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(20px);
+  transition:
+    opacity 520ms ease,
+    transform 520ms ease,
+    visibility 0s linear 520ms;
+}
+
+.portfolio-flow .contact-bubble[data-receded='false'] {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .contact-bubble {
+    transition: none;
+    transform: none;
+  }
+}
+
+/* ---------------- content flow ---------------- */
+
+/* The scene owns pointer events by default (cord/lamp interaction lives in
+   WebGL). Only real UI containers opt back into the pointer. */
+.portfolio-flow,
+.hero-section {
+  pointer-events: none;
+}
+
+.portfolio-flow .hero,
+.section-panel,
+.site-footer {
+  pointer-events: auto;
+}
+
+.portfolio-flow {
+  position: relative;
+  z-index: var(--z-overlay);
+}
+
+.section {
+  position: relative;
+  padding: clamp(48px, 8vh, 110px) var(--space-4);
+}
+
+.section-inner {
+  max-width: 1060px;
+  margin: 0 auto;
+  transition: max-width 300ms ease;
+}
+
+/* spatial coupling: each panel sits toward the room zone it narrates,
+   reinforcing that content belongs to a place, not to a scrolling page */
+.section--shelf .section-inner {
+  max-width: 880px;
+  margin-left: auto;
+}
+
+.section--door .section-inner {
+  max-width: 620px;
+  margin-left: auto;
+}
+
+@media (min-width: 1200px) {
+  .section--door .section-inner {
+    margin-right: clamp(0px, 4vw, 80px);
+  }
+}
+
+@media (max-width: 640px) {
+  /* alignment collapses on small screens — legibility first */
+  .section--shelf .section-inner,
+  .section--door .section-inner {
+    max-width: 100%;
+    margin-inline: 0;
+  }
+}
+
+/* panel scrim: DOM readable over the scene without hiding it completely */
+.section-panel {
+  background: rgba(10, 9, 8, 0.84);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  padding: clamp(24px, 4vw, 56px);
+}
+
+/* ---------------- document vs spatial presentation (M5.7) ----------------
+   With the scene live, the room IS the interface. Document panels keep
+   their LAYOUT — scroll geometry drives the narrative camera — but they
+   must NOT paint, catch pointers, take focus or read as floating UI over
+   the scene: content reaches the reader through the spatial interfaces
+   (monitor / book), mounted ONLY while their state is open. Without
+   WebGL everything stays a normal readable portfolio. visibility (not
+   opacity) removes hidden panels from hit-testing and the tab order. */
+
+.portfolio-flow[data-scene='on'] .section-panel,
+.portfolio-flow[data-scene='on'] .site-footer {
+  visibility: hidden;
+}
+
+/* fallback-only treatment: panels lift while their narrative moment holds */
+.section-panel--narrative {
+  transition:
+    opacity 600ms ease,
+    border-color 600ms ease,
+    box-shadow 600ms ease;
+}
+
+.section-panel--narrative.is-active {
+  border-color: rgba(255, 179, 92, 0.4);
+  box-shadow: 0 0 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 179, 92, 0.12);
+}
+
+/* book page indicator: ties the DOM twin to the physical book */
+.book-progress {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: var(--accent);
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  display: inline-block;
+  padding: 6px 14px;
+  margin-bottom: var(--space-4);
+}
+
+.project-card.is-open-page {
+  border-color: rgba(255, 179, 92, 0.5);
+  box-shadow: 0 0 0 1px rgba(255, 179, 92, 0.25), 0 8px 28px rgba(0, 0, 0, 0.3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .section-panel--narrative,
+  .project-card {
+    transition: none;
+  }
+}
+
+.section-label {
+  font-size: 12px;
+  letter-spacing: 4px;
+  color: var(--accent);
+  margin-bottom: var(--space-2);
+}
+
+.section h2 {
+  font-family: var(--font-display);
+  font-weight: normal;
+  font-size: clamp(28px, 4vw, 44px);
+  color: var(--text-primary);
+  margin-bottom: var(--space-3);
+}
+
+.section-intro {
+  font-family: var(--font-body);
+  color: var(--text-secondary);
+  max-width: 56ch;
+  margin-bottom: var(--space-6);
+}
+
+/* ---------------- hero ---------------- */
+
+.hero-section {
+  min-height: 100svh;
+  display: flex;
+  align-items: flex-end;
+  position: relative;
+  padding-bottom: clamp(48px, 9vh, 96px);
+}
+
+.hero-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.78), rgba(0, 0, 0, 0) 55%);
+  opacity: 1;
+  transition: opacity 900ms ease;
+}
+
+.hero-section[data-stage='0'] .hero-scrim,
+.hero-section[data-stage='1'] .hero-scrim {
+  opacity: 0.45;
+}
+
+.hero-section[data-stage='2'] .hero-scrim {
+  opacity: 0.72;
+}
+
+.hero-inner {
+  width: 100%;
+}
+
+.hero {
+  pointer-events: auto;
+  max-width: 580px;
+  user-select: text;
+}
+
+.hero .label {
+  color: var(--accent);
+  letter-spacing: 4px;
+  font-size: 13px;
+}
+
+.hero h1 {
+  font-family: var(--font-display);
+  font-size: clamp(38px, 7vw, 76px);
+  line-height: 1.05;
+  color: var(--text-primary);
+  margin: var(--space-2) 0;
+  transition: opacity 900ms ease;
+}
+
+/* name rises only when the room is readable (stage 3+) */
+.hero-section:not([data-stage='3']):not([data-stage='4']) .hero h1 {
+  opacity: 0.72;
+}
+
+.hero-role {
+  font-size: 14px;
+  letter-spacing: 3px;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-4);
+}
+
+.hero p.reveal {
+  font-family: var(--font-body);
+  color: var(--text-secondary);
+  font-size: var(--text-size-sm);
+  margin-bottom: var(--space-4);
+}
+
+/* secondary hero content stays out of the dark first frame; settles at stage 4.
+   visibility (not just opacity) keeps it out of tab order while hidden. */
+.hero .reveal {
+  opacity: 0;
+  transform: translateY(6px);
+  visibility: hidden;
+  transition:
+    opacity 700ms ease,
+    transform 700ms ease,
+    visibility 0s linear 700ms;
+}
+
+.hero-section[data-stage='4'] .hero .reveal {
+  opacity: 1;
+  transform: none;
+  visibility: visible;
+  transition:
+    opacity 700ms ease,
+    transform 700ms ease,
+    visibility 0s;
+}
+
+/* cord affordance lives only in the dark; gone once pulled */
+.hero-section:not([data-stage='0']) .cord-hint {
+  display: none;
+}
+
+.hint {
+  color: var(--text-muted);
+  font-size: var(--text-size-xs);
+  letter-spacing: 2px;
+}
+
+.hint.scroll-hint {
+  margin-top: var(--space-4);
+}
+
+.hero-ctas {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.button.ghost {
+  border-color: var(--hairline);
+}
+
+/* ---------------- buttons / panels (shared with dev tools + fallback) ---------------- */
+
+.panel button,
+.button {
+  pointer-events: auto;
+  display: inline-block;
+  margin: var(--space-1) var(--space-1) var(--space-1) 0;
+  padding: var(--space-2) 12px;
+  font: inherit;
+  font-size: 13px;
+  letter-spacing: 1px;
+  color: var(--text-primary);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.panel button:hover,
+.button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.panel button:focus-visible,
+.button:focus-visible,
+a:focus-visible,
+summary:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.panel button[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #14100c;
+}
+
+.panel {
+  pointer-events: auto;
+  background: rgba(13, 11, 9, 0.82);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-size-xs);
+  line-height: 1.7;
+}
+
+/* ---------------- dev hud + lamp widget (M5.9) ----------------
+   Instrumentation must not compete with the composition: a thin edge
+   strip when collapsed, a small inspector when expanded; the lamp is a
+   pixel bulb with its secondary controls in a popover. */
+
+.dev-tools {
+  position: fixed;
+  bottom: var(--space-3);
+  right: var(--space-3);
+  z-index: calc(var(--z-fallback) + 1);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-2);
+  pointer-events: none;
+}
+
+.dev-hud,
+.lamp-widget {
+  pointer-events: auto;
+}
+
+.dev-hud {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.dev-hud-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  background: rgba(13, 11, 9, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+  padding: 3px 7px;
+  cursor: pointer;
+  opacity: 0.82;
+}
+
+.dev-hud-tag {
+  color: var(--accent);
+  letter-spacing: 2px;
+}
+
+.dev-hud-mini {
+  white-space: nowrap;
+}
+
+.dev-hud:hover .dev-hud-tab {
+  color: var(--text-secondary);
+}
+
+.dev-hud-body {
+  margin-top: var(--space-1);
+  min-width: 220px;
+  max-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dev-hud-title {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--accent);
+  margin-top: 4px;
+}
+
+.dev-hud-stat {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.lamp-widget {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.lamp-bulb {
+  width: 30px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  background: rgba(13, 11, 9, 0.85);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  padding: 0;
+}
+
+.lamp-bulb svg {
+  width: 16px;
+  height: 20px;
+}
+
+.lamp-bulb svg rect {
+  fill: #57493a; /* unlit glass */
+  transition: fill var(--transition-fast);
+}
+
+.lamp-bulb.is-on svg rect {
+  fill: var(--amber-light); /* lit glass */
+}
+
+.lamp-bulb.is-on svg .bulb-glow {
+  fill: #14100c; /* filament reads as a dark slit inside the light */
+}
+
+.lamp-more {
+  width: 22px;
+  height: 34px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.lamp-more:hover,
+.lamp-more:focus-visible,
+.lamp-more[aria-expanded='true'] {
+  color: var(--text-secondary);
+  border-color: var(--hairline);
+}
+
+.lamp-pop {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 170px;
+}
+
+.lamp-motion {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ---------------- projects ---------------- */
+
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+  gap: var(--space-4);
+}
+
+.project-card {
+  background: rgba(20, 16, 12, 0.72);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  padding: var(--space-5, 20px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+@media (min-width: 900px) {
+  .project-card.featured {
+    grid-column: span 2;
+  }
+}
+
+.project-header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+
+.project-num {
+  font-size: 22px;
+  color: var(--text-muted);
+}
+
+.project-header h3 {
+  font-family: var(--font-display);
+  font-weight: normal;
+  font-size: 26px;
+  color: var(--text-primary);
+}
+
+.project-attribution {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+}
+
+.project-short {
+  font-family: var(--font-body);
+  color: var(--text-secondary);
+  font-size: var(--text-size-sm);
+}
+
+.featured .project-short {
+  color: var(--text-primary);
+  font-size: var(--text-size-md);
+}
+
+.project-role {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+}
+
+.project-role span {
+  color: var(--text-secondary);
+}
+
+.tag-list {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: 0;
+}
+
+.tag-list li {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--text-secondary);
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  padding: 2px 10px;
+}
+
+.tech-line {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.8;
+}
+
+.evidence-line {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+}
+
+.evidence-line::before {
+  content: '● ';
+}
+
+.evidence-verified {
+  color: var(--text-secondary);
+}
+
+.evidence-partial,
+.evidence-self-reported {
+  opacity: 0.75;
+}
+
+.project-links {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  min-height: 34px;
+}
+
+.link-status {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+}
+
+.project-details {
+  border-top: 1px solid var(--hairline);
+  padding-top: var(--space-3);
+}
+
+.project-details summary {
+  cursor: pointer;
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: var(--accent);
+  list-style: none;
+}
+
+.project-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.project-details summary::before {
+  content: '+ ';
+}
+
+.project-details[open] summary::before {
+  content: '− ';
+}
+
+.case-study p {
+  font-family: var(--font-body);
+  color: var(--text-secondary);
+  font-size: var(--text-size-sm);
+  line-height: 1.7;
+  margin-top: var(--space-3);
+}
+
+/* ---------------- about / skills ---------------- */
+
+.about-body p {
+  font-family: var(--font-body);
+  color: var(--text-secondary);
+  font-size: var(--text-size-md);
+  line-height: 1.75;
+  max-width: 68ch;
+}
+
+.about-body p + p {
+  margin-top: var(--space-4);
+}
+
+.skills-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  gap: var(--space-6) var(--space-8);
+  margin: 0;
+}
+
+.skill-group dt {
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: var(--accent);
+  margin-bottom: var(--space-2);
+}
+
+.skill-group dd {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--text-secondary);
+  font-size: var(--text-size-sm);
+  line-height: 1.9;
+}
+
+/* ---------------- experience / education ---------------- */
+
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-left: 1px solid var(--hairline);
+}
+
+.timeline li {
+  padding: 0 0 var(--space-6) var(--space-6);
+  position: relative;
+}
+
+.timeline li::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.timeline h3 {
+  font-family: var(--font-display);
+  font-weight: normal;
+  font-size: 20px;
+  color: var(--text-primary);
+}
+
+.timeline-org {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  margin: var(--space-1) 0;
+}
+
+.timeline-period {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.timeline-summary {
+  font-family: var(--font-body);
+  color: var(--text-secondary);
+  font-size: var(--text-size-sm);
+  line-height: 1.7;
+  max-width: 70ch;
+}
+
+.education-title {
+  font-size: 12px;
+  letter-spacing: 3px;
+  color: var(--accent);
+  margin: var(--space-6) 0 var(--space-3);
+  font-family: var(--font-mono);
+  font-weight: normal;
+}
+
+.education-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.education-list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: space-between;
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--hairline);
+  font-family: var(--font-body);
+  font-size: var(--text-size-sm);
+  color: var(--text-secondary);
+}
+
+.education-meta {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+/* ---------------- contact / footer / fallback ---------------- */
+
+.contact-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.contact-pending {
+  font-family: var(--font-body);
+  color: var(--text-secondary);
+  font-size: var(--text-size-sm);
+  max-width: 60ch;
+}
+
+.site-footer {
+  padding: var(--space-8) var(--space-6) var(--space-12);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+
+.site-footer p + p {
+  margin-top: var(--space-1);
+}
+
+.fallback {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-fallback);
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: var(--space-6);
+}
+
+/* ---------------- responsive ---------------- */
+
+@media (max-width: 640px) {
+  .section {
+    padding-inline: var(--space-3);
+  }
+
+  .hero-section {
+    padding-inline: var(--space-3);
+  }
+
+  /* the contact bubble centers on small screens (the door tail is decorative) */
+  .contact-bubble {
+    margin-inline: auto;
+    width: 100%;
+  }
+
+  .dev-tools {
+    bottom: var(--space-2);
+    right: var(--space-2);
+    transform: scale(0.9); /* instrumentation stays, just quieter */
+    transform-origin: bottom right;
+  }
+}

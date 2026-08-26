@@ -1,0 +1,63 @@
+/* ============================================================
+   Amber Studio — Design Tokens (derived from M0.2)
+   Single source of truth. Do not hardcode these values elsewhere.
+   Breakpoints are documented here but must live in TS constants
+   (CSS custom properties cannot be used inside media queries):
+     phone:  <= 640px   tablet: 641–1024px   desktop: > 1024px
+   ============================================================ */
+
+:root {
+  /* ---- scene palette ---- */
+  --night-wall: #0a0d13;
+  --moon-blue: #2a3c58;
+  --phosphor: #2f6b57;
+  --warm-wall-lit: #4a3826;
+  --wood-mid: #7a5638;
+  --amber-light: #ffb35c;
+  --amber-highlight: #ffe2b0;
+
+  /* ---- DOM palette ---- */
+  --bg-dom: #0d0b09;
+  --text-primary: #f2e7d0;
+  --text-secondary: #cfc2a8;
+  --text-muted: #9c8f78;
+  --accent: #f5a742;
+  --hairline: rgba(255, 255, 255, 0.14);
+  --card-bg: rgba(20, 16, 12, 0.55);
+
+  /* ---- typography ---- */
+  --font-display: Georgia, 'Times New Roman', serif;
+  --font-body: system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, 'IBM Plex Mono', monospace;
+  --text-size-xs: 0.75rem;
+  --text-size-sm: 0.875rem;
+  --text-size-md: 1rem;
+  --text-size-hero: clamp(34px, 6vw, 64px);
+
+  /* ---- spacing scale ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  /* ---- radii ---- */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+
+  /* ---- z-index layers ---- */
+  --z-canvas: 0;
+  --z-overlay: 1;
+  --z-fallback: 2;
+  --z-skip-link: 10;
+
+  /* ---- motion ---- */
+  --transition-fast: 120ms ease;
+  --transition-base: 200ms ease;
+
+  /* ---- focus ---- */
+  --focus-ring: 2px solid var(--accent);
+  --focus-offset: 2px;
+}
