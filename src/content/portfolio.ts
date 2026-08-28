@@ -24,7 +24,7 @@ export const profile: Profile = {
   name: 'Emilson Oviedo',
   role: 'Software Developer · AI',
   tagline:
-    "Full-stack developer & AI engineer — I build software that works, from schema to interface.",
+    "Full-stack developer & AI engineer — I build careful, verifiable software, from schema to interface.",
 }
 
 export const projects: Project[] = [
@@ -249,7 +249,7 @@ export const skills: SkillGroup[] = [
 export const contact: ContactLinks = {
   // real channels live — the contact bubble renders them now
   published: true,
-  cta: 'Have a project or an idea in mind? I would love to hear about it.',
+  cta: 'Have a project or an idea in mind? I\'d love to build it with you.',
   email: 'emilson1662@gmail.com',
   github: 'https://github.com/SlingerByte',
   linkedin: 'https://www.linkedin.com/in/emilson-oviedo/',
@@ -269,7 +269,7 @@ export const sectionIntros = {
   skills:
     'What I use with confidence — everything here has shipped in a real project above.',
   experience:
-    'Professional experience and education, newest first.',
+    'Applied AI at Microsoft, quality engineering with Jüna — and the education behind both.',
   contact: 'You found the door — the easy part is saying hello.',
 } as const
 

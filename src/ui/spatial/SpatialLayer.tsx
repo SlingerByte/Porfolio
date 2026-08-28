@@ -1,13 +1,16 @@
-import { useCallback, useEffect, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useExperience } from '../../state/ExperienceContext'
 import { ANCHORS, ANCHOR_STATE } from './anchors'
 import { getCameraFov } from '../../scene/config'
 import { projectWorldRect, quadAabb } from './projection'
 import { getUiTier } from './tier'
 import { nextFocus, type FocusMode } from './focus'
+import { useLampShortcut } from './useLampShortcut'
+import { useFocusTrap } from './useFocusTrap'
 import { MonitorInterface } from './MonitorInterface'
 import { BookInterface } from './BookInterface'
 import { SkillsInterface } from './SkillsInterface'
+import { LightGate } from './LightGate'
 import { CAMERA_POSES } from '../../scene/cameraPoses'
 import { useI18n } from '../../content/strings'
 
@@ -57,7 +60,18 @@ const NAV_CLEARANCE_BASE = 16 + 30 + 8
 const MARGIN = 24
 
 export function SpatialLayer() {
-  const { narrative, cameraSettled, focus, setFocus, reducedMotion } = useExperience()
+  const {
+    narrative,
+    cameraSettled,
+    focus,
+    setFocus,
+    reducedMotion,
+    bulb,
+    bulbAcquired,
+    drawerOpen,
+    setDrawerOpen,
+    acquireBulb,
+  } = useExperience()
   const { t } = useI18n()
   const [viewport, setViewport] = useState(() => ({
     width: window.innerWidth,
@@ -66,6 +80,26 @@ export function SpatialLayer() {
   const [trigger, setTrigger] = useState<HTMLElement | null>(null)
   /** quad of the object at open time — the focused panel grows out of it */
   const [originRect, setOriginRect] = useState<Rect | null>(null)
+  const layerRef = useRef<HTMLDivElement>(null)
+
+  // P0-A: ENTER toggles the lamp exactly like the pull cord (same canal).
+  // This DOM layer owns the room-state affordances, so the shortcut lives
+  // here and delegates to the lamp state; LampRig still owns the animation.
+  useLampShortcut()
+
+  // P0-B: while a focus interface is open the rest of the app is inert —
+  // focus, pointer and AT stay inside the dialog. The focus trap in
+  // FocusedDisplay is the keyboard guarantee; inert is the structural one.
+  useEffect(() => {
+    if (focus === 'none') return undefined
+    const layer = layerRef.current
+    if (!layer?.parentElement) return undefined
+    const background = Array.from(layer.parentElement.children).filter(
+      (el) => el !== layer
+    ) as HTMLElement[]
+    background.forEach((el) => el.setAttribute('inert', ''))
+    return () => background.forEach((el) => el.removeAttribute('inert'))
+  }, [focus])
 
   useEffect(() => {
     const onResize = () => setViewport({ width: window.innerWidth, height: window.innerHeight })
@@ -126,8 +160,19 @@ export function SpatialLayer() {
 
   const affordance = cameraSettled && focus === 'none' ? AFFORDANCE[narrative] : undefined
 
+  /** Task 7G — while the lamp is burned and the spare hasn't been found, the
+      top drawer is the story's only object of interest. A single docked
+      affordance (the app's own pattern for acting on objects) keeps the whole
+      mechanic reachable by keyboard/screen reader without any quest UI:
+      OPEN DRAWER → TAKE BULB → (the lamp, via ENTER/cord). It shows on the
+      lamp's own beats (hero / restored room), never over another beat's
+      affordance. */
+  const drawerAffordance =
+    bulb === 'burned' && !bulbAcquired && cameraSettled && focus === 'none' &&
+    (narrative === 'hero' || narrative === 'room')
+
   return (
-    <div className="spatial-layer" data-spatial-layer="true" data-focus={focus}>
+    <div className="spatial-layer" data-spatial-layer="true" data-focus={focus} ref={layerRef}>
       {/* dimmed room behind focused interfaces — silhouettes stay readable */}
       {focus !== 'none' && <div className="spatial-scrim" onClick={close} aria-hidden="true" />}
 
@@ -142,7 +187,7 @@ export function SpatialLayer() {
       )}
 
       {/* ROOM affordance: one quiet action, docked — never over the object */}
-      {affordance && (
+      {affordance && !drawerAffordance && (
         <div className="room-affordance">
           <button
             type="button"
@@ -156,6 +201,28 @@ export function SpatialLayer() {
           </button>
         </div>
       )}
+
+      {/* Task 7G/7G.1 — the spare-bulb drawer's docked affordance (two steps:
+          open the drawer, then take the bulb — both keyboard-reachable; the
+          drawer closes on its own once the bulb is installed) */}
+      {drawerAffordance && (
+        <div className="room-affordance">
+          <button
+            type="button"
+            className="room-affordance-btn"
+            onClick={() => {
+              if (drawerOpen) acquireBulb()
+              else setDrawerOpen(true)
+            }}
+          >
+            {drawerOpen ? t('affordTakeBulb') : t('affordDrawer')}
+          </button>
+        </div>
+      )}
+
+      {/* Task 7H — the light-first discovery gate: holds scroll at the hero
+          while the room is dark and points at the lamp cord on any attempt */}
+      <LightGate />
     </div>
   )
 }
@@ -180,6 +247,11 @@ function FocusedDisplay({
 }) {
   const { t } = useI18n()
   const [entered, setEntered] = useState(reducedMotion)
+
+  // P0-B: focus isolation — the dialog is aria-modal and Tab cannot leave
+  // it while it is open (wraps inside; background stays unreachable).
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useFocusTrap(dialogRef)
 
   useEffect(() => {
     if (reducedMotion) return undefined
@@ -212,9 +284,10 @@ function FocusedDisplay({
 
   return (
     <div
+      ref={dialogRef}
       className={`spatial-focused spatial-focused--${kind}${entered ? ' is-entered' : ''}`}
       role="dialog"
-      aria-modal="false"
+      aria-modal="true"
       aria-label={focusLabel}
     >
       <div

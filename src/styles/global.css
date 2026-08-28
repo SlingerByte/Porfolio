@@ -113,6 +113,12 @@ canvas {
   text-underline-offset: 4px;
 }
 
+/* the beat number is a structural element: visible only in the compact
+   (constrained-width) nav, where the long labels collapse to 01 02 03 04 */
+.nav-num {
+  display: none;
+}
+
 /* language toggle — a quiet pill in the nav */
 .lang-toggle {
   margin-left: var(--space-2);
@@ -136,6 +142,31 @@ canvas {
   border-color: rgba(245, 167, 66, 0.6);
   outline: var(--focus-ring);
   outline-offset: 2px;
+}
+
+/* Compact numbered navigation (Task 7B). Below the width where the full
+   labels would collide with the brand in either language (measured: the
+   ES labels are the widest at 617px; collision starts below ~914px), the
+   long labels collapse to their beat numbers. The numbers are
+   language-independent, so EN and ES always occupy the same width and can
+   never overflow differently. The full destination stays in aria-label on
+   the links, so screen readers keep the semantic name. Touch targets are
+   raised to ≥44px. */
+@media (max-width: 920px) {
+  .nav-num {
+    display: inline;
+  }
+
+  .nav-label {
+    display: none;
+  }
+
+  .site-nav a,
+  .site-nav .lang-toggle {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
 }
 
 @media (max-width: 640px) {

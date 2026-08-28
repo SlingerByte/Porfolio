@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useEffect } from 'react'
 import { projectPoint, projectWorldRect, quadAabb, type CamView } from '../ui/spatial/projection'
 import { ANCHORS } from '../ui/spatial/anchors'
@@ -167,37 +167,41 @@ describe('NO EMBEDDED UI — interfaces are FOCUS-only', () => {
     expect(screen.getByTestId('shift')).toHaveTextContent('0')
   })
 
-  it('never invents links for projects without confirmed URLs', () => {
+  it('never invents links for projects without confirmed URLs', async () => {
     render(
       <ExperienceProvider>
         <BookInterface onClose={() => {}} />
         <PageProbe page={2} /> {/* EcoFunding spread (page 2 = project 02, private) */}
       </ExperienceProvider>
     )
-    expect(screen.getByRole('heading', { name: 'EcoFunding' })).toBeInTheDocument()
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'EcoFunding' })).toBeInTheDocument()
+    )
     // private project: links are null in the content model -> status chip, never dead anchors
     expect(screen.getByText('CODE AVAILABLE ON REQUEST')).toBeInTheDocument()
     expect(screen.queryByRole('link')).toBeNull()
   })
 
-  it('projects with public repos render real REPO links', () => {
+  it('projects with public repos render real REPO links', async () => {
     render(
       <ExperienceProvider>
         <BookInterface onClose={() => {}} />
         <PageProbe page={1} /> {/* GrantFlow spread (public repo) */}
       </ExperienceProvider>
     )
+    await waitFor(() => expect(screen.getByRole('link', { name: /REPO/i })).toBeInTheDocument())
     const repo = screen.getByRole('link', { name: /REPO/i })
     expect(repo).toHaveAttribute('href', 'https://github.com/SlingerByte/GrantFlow')
   })
 
-  it('the focused case study carries the labeled deep dive + evidence', () => {
+  it('the focused case study carries the labeled deep dive + evidence', async () => {
     render(
       <ExperienceProvider>
         <BookInterface onClose={() => {}} />
         <PageProbe page={2} />
       </ExperienceProvider>
     )
+    await waitFor(() => expect(screen.getByText('THE PROBLEM')).toBeInTheDocument())
     for (const label of ['THE PROBLEM', 'THE APPROACH', 'WHAT I BUILT', 'STACK', 'EVIDENCE']) {
       expect(screen.getByText(label)).toBeInTheDocument()
     }

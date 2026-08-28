@@ -26,7 +26,7 @@ export function getCameraFov(width: number): number {
  * coarser render, so a single constant keeps look and budget aligned.
  */
 export function getDefaultPixelScale(): number {
-  return 0.5
+  return 1.0
 }
 
 /* Camera poses live in cameraPoses.ts — one named table per device tier.

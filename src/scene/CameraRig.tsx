@@ -5,6 +5,7 @@ import { gsap } from '../motion/gsap'
 import { useExperience } from '../state/ExperienceContext'
 import type { NarrativeState } from '../state/narrative'
 import { CAMERA_POSES, VIA_ROOM, getPoseTier, type Pose } from './cameraPoses'
+import { requestRender } from './invalidate'
 
 /**
  * THE single owner of the camera.
@@ -73,6 +74,7 @@ export function CameraRig() {
       })
       apply()
       finish()
+      requestRender() // demand: the pose applied instantly still needs a frame
       return undefined
     }
 
@@ -89,6 +91,7 @@ export function CameraRig() {
       },
     })
     timelineRef.current = tl
+    requestRender() // demand primer: the dolly runs on chained frames from here
 
     if (via) {
       tl.to(proxy, {

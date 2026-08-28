@@ -24,6 +24,7 @@ vi.mock('../scene/SceneCanvas', () => ({ default: () => null }))
 import App from '../App'
 import { ExperienceProvider, useExperience } from '../state/ExperienceContext'
 import { SpatialLayer } from '../ui/spatial/SpatialLayer'
+import { FOCUSABLE_SELECTOR } from '../ui/spatial/useFocusTrap'
 
 /** Every class that ever marked an embedded surface — none may exist. */
 const EMBEDDED_SELECTORS = [
@@ -88,6 +89,12 @@ function SceneProbe({ narrative, settled }: { narrative: NarrativeState; settled
     setCameraSettled(settled)
   }, [narrative, settled, setNarrative, setCameraSettled])
   return null
+}
+
+/** Reads the lamp state so tests can observe keyboard toggling. */
+function LampProbe() {
+  const { lampOn } = useExperience()
+  return <span data-testid="lamp">{lampOn ? 'on' : 'off'}</span>
 }
 
 function renderSpatial(narrative: NarrativeState) {
@@ -212,5 +219,111 @@ describe('FOCUS opens from the affordance and closes back to a clean ROOM', () =
       expect(container.querySelector('.spatial-scrim')).toBeNull()
       expectCleanRoom(container)
     }
+  })
+})
+
+describe('P0-A — lamp keyboard parity', () => {
+  it('ENTER toggles the lamp in ROOM state (same toggleLamp canal as the cord)', () => {
+    render(
+      <ExperienceProvider>
+        <SceneProbe narrative="hero" settled />
+        <LampProbe />
+        <SpatialLayer />
+      </ExperienceProvider>
+    )
+    expect(screen.getByTestId('lamp')).toHaveTextContent('off')
+    fireEvent.keyDown(window, { key: 'Enter' })
+    expect(screen.getByTestId('lamp')).toHaveTextContent('on')
+    fireEvent.keyDown(window, { key: 'Enter' })
+    expect(screen.getByTestId('lamp')).toHaveTextContent('off')
+  })
+
+  it('never fires while a focus interface is open', () => {
+    render(
+      <ExperienceProvider>
+        <SceneProbe narrative="monitor" settled />
+        <LampProbe />
+        <SpatialLayer />
+      </ExperienceProvider>
+    )
+    fireEvent.click(screen.getByRole('button', { name: /OPEN DISPLAY/ }))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    fireEvent.keyDown(window, { key: 'Enter' })
+    expect(screen.getByTestId('lamp')).toHaveTextContent('off')
+  })
+
+  it('does not race an element that already owns Enter', () => {
+    render(
+      <ExperienceProvider>
+        <SceneProbe narrative="monitor" settled />
+        <LampProbe />
+        <SpatialLayer />
+      </ExperienceProvider>
+    )
+    const affordance = screen.getByRole('button', { name: /OPEN DISPLAY/ })
+    fireEvent.keyDown(affordance, { key: 'Enter' })
+    expect(screen.getByTestId('lamp')).toHaveTextContent('off')
+  })
+})
+
+describe('P0-B — focus isolation', () => {
+  it('open dialog is aria-modal with an accessible name, focus enters, and Tab cannot escape', () => {
+    renderSpatial('monitor')
+    fireEvent.click(screen.getByRole('button', { name: /OPEN DISPLAY/ }))
+
+    const dialog = screen.getByRole('dialog', { name: /Monitor display expanded/ })
+    expect(dialog).toHaveAttribute('aria-modal', 'true')
+
+    // focus entered the interface itself (the terminal focuses its input)
+    expect(dialog.contains(document.activeElement)).toBe(true)
+
+    // Tab from the last focusable wraps back to the first — never the background
+    const focusables = Array.from(dialog.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR))
+    expect(focusables.length).toBeGreaterThan(0)
+    const first = focusables[0]
+    const last = focusables[focusables.length - 1]
+
+    last.focus()
+    fireEvent.keyDown(document, { key: 'Tab' })
+    expect(document.activeElement).toBe(first)
+
+    first.focus()
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: true })
+    expect(document.activeElement).toBe(last)
+
+    // a stray focus outside the dialog is pulled back in on the next Tab
+    ;(document.activeElement as HTMLElement | null)?.blur()
+    fireEvent.keyDown(document, { key: 'Tab' })
+    expect(dialog.contains(document.activeElement)).toBe(true)
+  })
+
+  it('background siblings are inert while a focus interface is open, released on close', () => {
+    const { container } = render(
+      <ExperienceProvider>
+        <SceneProbe narrative="monitor" settled />
+        <div data-testid="background" />
+        <SpatialLayer />
+      </ExperienceProvider>
+    )
+    const background = container.querySelector('[data-testid="background"]')!
+    expect(background.hasAttribute('inert')).toBe(false)
+    fireEvent.click(screen.getByRole('button', { name: /OPEN DISPLAY/ }))
+    expect(background.hasAttribute('inert')).toBe(true)
+    fireEvent.click(screen.getByRole('button', { name: /CLOSE/ }))
+    expect(background.hasAttribute('inert')).toBe(false)
+  })
+})
+
+describe('P0-C — About accessibility with the scene live', () => {
+  it('About stays semantically reachable while WebGL owns the presentation', () => {
+    render(<App />)
+    expect(document.getElementById('content')).toHaveAttribute('data-scene', 'on')
+    const about = document.getElementById('about')!
+    expect(about).not.toBeNull()
+    // stable heading + a visually-hidden-but-accessible body
+    const hidden = about.querySelector('.sr-only')
+    expect(hidden).not.toBeNull()
+    expect(hidden!.querySelectorAll('p').length).toBeGreaterThan(0)
+    expect(screen.getByRole('heading', { name: /Who's in this room/ })).toBeInTheDocument()
   })
 })

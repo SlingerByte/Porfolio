@@ -18,7 +18,7 @@ export const profile: Profile = {
   name: 'Emilson Oviedo',
   role: 'Desarrollador de Software · IA',
   tagline:
-    'Desarrollador full-stack e ingeniero de IA — construyo software que funciona, del esquema a la interfaz.',
+    'Desarrollador full-stack e ingeniero de IA — construyo software cuidadoso y verificable, del esquema a la interfaz.',
 }
 
 export const projects: Project[] = [
@@ -243,7 +243,7 @@ export const skills: SkillGroup[] = [
 export const contact: ContactLinks = {
   // canales reales activos — el globo de contacto los muestra ahora
   published: true,
-  cta: '¿Tienes un proyecto o una idea en mente? Me encantaría escucharla.',
+  cta: '¿Tienes un proyecto o una idea en mente? Me encantaría construirlo contigo.',
   email: 'emilson1662@gmail.com',
   github: 'https://github.com/SlingerByte',
   linkedin: 'https://www.linkedin.com/in/emilson-oviedo/',
@@ -263,7 +263,7 @@ export const sectionIntros = {
   skills:
     'Lo que uso con confianza — todo esto se ha enviado en un proyecto real de arriba.',
   experience:
-    'Experiencia profesional y educación, lo más reciente primero.',
+    'IA aplicada en Microsoft, ingeniería de calidad con Jüna — y la educación detrás de ambos.',
   contact: 'Encontraste la puerta — la parte fácil es saludar.',
 } as const
 

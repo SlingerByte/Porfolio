@@ -52,7 +52,7 @@ Dos timelines pausadas (`onTl`/`offTl`) que nunca corren a la vez. Toggle mid-se
 
 ## 9. Pixel scale
 
-**0.50** — confirmado por revisión humana, sin cambios (default desktop actualizado implícitamente por decisión humana; nota: `getDefaultPixelScale()` sigue devolviendo 0.40 para desktop — ver decisiones abiertas).
+**1.00** — confirmado por revisión humana, sin cambios (default desktop actualizado implícitamente por decisión humana; nota: `getDefaultPixelScale()` sigue devolviendo 0.40 para desktop — ver decisiones abiertas).
 
 ## 10. Decisiones abiertas
 

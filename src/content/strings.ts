@@ -19,6 +19,8 @@ const STRINGS = {
     // hero
     cordHint: 'PULL THE CORD · OR PRESS ENTER',
     scrollHint: 'SCROLL · STEP INTO THE STUDIO',
+    // Task 7H — light-first discovery gate
+    lightGate: 'A little dark in here — turn the light on first.',
     sceneUnavailable: 'SCENE UNAVAILABLE — CONTENT REMAINS',
     reducedMotionHint: 'REDUCED MOTION · CAMERA HOLDS',
     viewWork: 'VIEW WORK →',
@@ -107,6 +109,9 @@ const STRINGS = {
     affordMonitor: 'OPEN DISPLAY ↗',
     affordBook: 'OPEN CASE STUDY →',
     affordSkills: 'VIEW ALL SKILLS →',
+    // Task 7G — spare-bulb drawer (shown only while the lamp is burned)
+    affordDrawer: 'OPEN DRAWER →',
+    affordTakeBulb: 'TAKE BULB →',
     // door / corkboard
     doorPlate: '· CONTACT ·',
     skillsSign: '// SKILLS',
@@ -144,6 +149,8 @@ const STRINGS = {
     navAria: 'Secciones del portafolio',
     cordHint: 'JALA EL CORDÓN · O PRESIONA ENTER',
     scrollHint: 'SCROLL · ENTRA AL ESTUDIO',
+    // Task 7H — portón de descubrimiento "primero la luz"
+    lightGate: 'Está un poco oscuro aquí — enciende la luz primero.',
     sceneUnavailable: 'ESCENA NO DISPONIBLE — EL CONTENIDO SIGUE AQUÍ',
     reducedMotionHint: 'MOVIMIENTO REDUCIDO · CÁMARA FIJA',
     viewWork: 'VER TRABAJO →',
@@ -226,6 +233,9 @@ const STRINGS = {
     affordMonitor: 'ABRIR DISPLAY ↗',
     affordBook: 'ABRIR CASO DE ESTUDIO →',
     affordSkills: 'VER TODAS LAS HABILIDADES →',
+    // Task 7G — cajón de la bombilla de repuesto (solo mientras la lámpara está quemada)
+    affordDrawer: 'ABRIR CAJÓN →',
+    affordTakeBulb: 'TOMAR BOMBILLA →',
     doorPlate: '· CONTACTO ·',
     skillsSign: '// HABILIDADES',
     fallbackWebgl: '// WEBGL NO DISPONIBLE',

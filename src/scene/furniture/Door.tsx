@@ -6,6 +6,7 @@ import { useExperience } from '../../state/ExperienceContext'
 import { useI18n } from '../../content/strings'
 import { PALETTE } from '../palette'
 import { playKnock } from '../sound'
+import { requestRender } from '../invalidate'
 
 /**
  * Structural door (~85% horizontal) — the narrative endpoint of the journey.
@@ -80,6 +81,7 @@ export function Door() {
   const knobRef = useRef<THREE.Mesh>(null)
   const tocRefs = useRef<(THREE.Sprite | null)[]>([])
   const tocMats = useRef<(THREE.SpriteMaterial | null)[]>([])
+  const knockTl = useRef<gsap.core.Timeline | null>(null)
   const activeRef = useRef(active)
   activeRef.current = active
 
@@ -102,7 +104,11 @@ export function Door() {
       origin.y = Math.max(0.4, Math.min(1.9, local.y))
     }
 
+    // a new knock abandons any knock still playing — two timelines must
+    // never fight over the hinge (Phase 4: fixes a double-fire jitter)
+    knockTl.current?.kill()
     const tl = gsap.timeline()
+    knockTl.current = tl
     // hit 1 — the door pushes inward and springs back
     tl.to(hinge.rotation, { y: 0.06, duration: 0.09, yoyo: true, repeat: 1, ease: 'power1.inOut' }, 0)
     tl.to(hinge.position, { z: -0.014, duration: 0.09, yoyo: true, repeat: 1, ease: 'power1.inOut' }, 0)
@@ -157,13 +163,15 @@ export function Door() {
     // the knock is heard, too — one wood knock per hit
     tl.call(() => playKnock(), [], 0)
     tl.call(() => playKnock(), [], 0.2)
+    requestRender() // demand primer: the knock/TOC choreography runs from here
   }, [])
 
   const hover = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation()
     document.body.style.cursor = active ? 'pointer' : 'auto'
-    // touching the door answers with a soft knock right where you touched
-    if (active && !reducedMotion) knock(e.point)
+    // hover-knock is a mouse-only affordance (Phase 4): on touch the same
+    // pointerover would double-fire with the tap knock below
+    if (active && !reducedMotion && e.pointerType === 'mouse') knock(e.point)
   }
   // on touch there is no hover — tapping the door knocks too
   const touchKnock = (e: ThreeEvent<PointerEvent>) => {
@@ -189,6 +197,8 @@ export function Door() {
     () => () => {
       plateTexture.dispose()
       knockTextTexture.dispose()
+      knockTl.current?.kill()
+      knockTl.current = null
     },
     [plateTexture, knockTextTexture]
   )
@@ -201,6 +211,7 @@ export function Door() {
       duration: reducedMotion ? 0 : 1.2,
       ease: 'power2.inOut',
     })
+    requestRender() // demand primer: the hallway leak settles on chained frames
     return () => {
       tween.kill()
     }

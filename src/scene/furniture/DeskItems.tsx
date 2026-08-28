@@ -9,8 +9,9 @@ import { PALETTE } from '../palette'
 export function DeskItems() {
   return (
     <group>
-      {/* keyboard: single body + two key-row ridges (3 draw calls, reads at pixel scale) */}
-      <group position={[0.08, 0.835, -0.7]} rotation={[0, 0.06, 0]}>
+      {/* keyboard: single body + two key-row ridges (3 draw calls, reads at pixel scale)
+          body bottom = 0.826 - 0.022/2 = 0.815 = desk top */}
+      <group position={[0.08, 0.826, -0.7]} rotation={[0, 0.06, 0]}>
         <mesh castShadow>
           <boxGeometry args={[0.52, 0.022, 0.16]} />
           <meshStandardMaterial color={PALETTE.techCharcoal} roughness={0.6} />
@@ -25,29 +26,32 @@ export function DeskItems() {
         </mesh>
       </group>
 
-      {/* mouse */}
-      <group position={[0.48, 0.84, -0.68]} rotation={[0, -0.12, 0]}>
-        <mesh castShadow>
+      {/* mouse: body lying flat on the desk (long axis along Z, nose toward -Z),
+          capsule radius rests on the top surface: center y = 0.815 + 0.032 */}
+      <group position={[0.48, 0.847, -0.68]} rotation={[0, -0.12, 0]}>
+        <mesh castShadow rotation={[-Math.PI / 2, 0, 0]}>
           <capsuleGeometry args={[0.032, 0.045, 4, 10]} />
           <meshStandardMaterial color={PALETTE.techCharcoal} roughness={0.5} />
         </mesh>
-        <mesh position={[0, 0.028, -0.02]} rotation={[0.35, 0, 0]}>
+        {/* scroll wheel: sits on top of the lying body, tilted toward the nose */}
+        <mesh position={[0, 0.042, 0.01]} rotation={[-0.35, 0, 0]}>
           <boxGeometry args={[0.008, 0.02, 0.01]} />
           <meshStandardMaterial color="#3d332a" roughness={0.4} />
         </mesh>
       </group>
 
-      {/* mug: ceramic catches the amber pool */}
+      {/* mug: ceramic catches the amber pool; body bottom = 0.870 - 0.11/2 =
+          0.815 = desk top, coffee surface is a horizontal disc below the rim */}
       <group position={[1.02, 0, -0.78]}>
-        <mesh position={[0, 0.885, 0]} castShadow>
+        <mesh position={[0, 0.87, 0]} castShadow>
           <cylinderGeometry args={[0.045, 0.038, 0.11, 14]} />
           <meshStandardMaterial color={PALETTE.ceramic} roughness={0.55} />
         </mesh>
-        <mesh position={[0, 0.925, 0]}>
+        <mesh position={[0, 0.92, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <circleGeometry args={[0.038, 14]} />
           <meshStandardMaterial color={PALETTE.coffeeDark} roughness={0.4} />
         </mesh>
-        <mesh position={[0.052, 0.89, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <mesh position={[0.052, 0.875, 0]} rotation={[Math.PI / 2, 0, 0]}>
           <torusGeometry args={[0.026, 0.007, 6, 14]} />
           <meshStandardMaterial color={PALETTE.ceramic} roughness={0.55} />
         </mesh>

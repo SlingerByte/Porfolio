@@ -1,7 +1,8 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useReducedMotion } from './useReducedMotion'
 import { getDefaultPixelScale } from '../scene/config'
 import { webglAvailable } from '../scene/webgl'
+import { createOverloadTracker, recordToggle, resetOverloadTracker } from '../scene/lampOverload'
 import type { Language } from '../content/locale'
 import type { NarrativeState } from './narrative'
 import type { FocusMode } from '../ui/spatial/focus'
@@ -20,6 +21,16 @@ export type { FocusMode }
  *   4 final      — room clearly lit; tagline / CTA / scroll hint settle in
  */
 export type SceneStage = 0 | 1 | 2 | 3 | 4
+
+/**
+ * Task 7G — the lamp bulb's state machine. LampRig owns the resulting
+ * animations; the context owns the discrete states (deterministic, session-
+ * persistent, easily reset by a replacement).
+ *
+ *   normal ──(10 rapid activations)──▶ overloading ──(FX end)──▶ burned
+ *   burned ──(replacement bulb installed)──▶ replacing ──(FX end)──▶ normal
+ */
+export type LampBulbState = 'normal' | 'overloading' | 'burned' | 'replacing'
 
 /**
  * Single owner of global experience state.
@@ -41,8 +52,32 @@ export interface ExperienceState {
   /** lamp sequence state; false = OFF */
   lampOn: boolean
   toggleLamp: () => void
+  /** Task 7H — the initial "light first" discovery is complete (the lamp has
+      been switched on at least once); the scroll gate never re-activates,
+      even if the bulb is later toggled off or burns out */
+  discoveryComplete: boolean
   /** deterministic OFF/reset of the lamp sequence */
   resetLamp: () => void
+  /** Task 7G — bulb life-cycle (see LampBulbState above) */
+  bulb: LampBulbState
+  /** Task 7G — the replacement bulb has been found & taken from the drawer */
+  bulbAcquired: boolean
+  /** Task 7G.1 — a dropped-far bulb returns to the drawer (clears acquisition) */
+  setBulbAcquired: (acquired: boolean) => void
+  /** Task 7G.1 — the bulb is currently being carried (drag toward the lamp) */
+  bulbCarried: boolean
+  setBulbCarried: (carried: boolean) => void
+  /** Task 7G — replacement drawer open/closed (owned by Desk + affordance) */
+  drawerOpen: boolean
+  setDrawerOpen: (open: boolean) => void
+  /** Task 7G — the user takes the bulb out of the drawer */
+  acquireBulb: () => void
+  /** Task 7G — burned+acquired → replacement sequence begins */
+  replaceBulb: () => void
+  /** Task 7G — overload FX finished → bulb burned, lamp forced off */
+  completeOverload: () => void
+  /** Task 7G — replacement FX finished → bulb normal, counter reset */
+  completeReplacement: () => void
   /** render-scale for the pixel aesthetic */
   pixelScale: number
   setPixelScale: (scale: number) => void
@@ -102,8 +137,35 @@ export function ExperienceProvider({ children }: { children: ReactNode }) {
   const [bookScrollPage, setBookScrollPage] = useState(0)
   const [bookPageShift, setBookPageShift] = useState(0)
   const [language, setLanguage] = useState<Language>(loadLanguage)
+  // Task 7G — the bulb life-cycle + replacement drawer
+  const [bulb, setBulb] = useState<LampBulbState>('normal')
+  const [bulbAcquired, setBulbAcquired] = useState(false)
+  const [bulbCarried, setBulbCarriedState] = useState(false)
+  const [drawerOpen, setDrawerOpenState] = useState(false)
+  const overloadTracker = useRef(createOverloadTracker())
+  // Task 7H — the initial discovery gate is released once the lamp has ever
+  // been switched on; a later burned bulb must not re-gate the room
+  const [discoveryComplete, setDiscoveryComplete] = useState(false)
 
-  const toggleLamp = useCallback(() => setLampOn((v) => !v), [])
+  // Task 7H — one authoritative release: the first ON is the discovery
+  useEffect(() => {
+    if (lampOn) setDiscoveryComplete(true)
+  }, [lampOn])
+
+  /**
+   * Task 7G — the ONE canal every lamp activation goes through (cord pull,
+   * tap/click, ENTER). When burned/overloading/replacing the bulb is dead:
+   * toggles are ignored. Otherwise count the activation in the sliding
+   * window and burn the bulb the moment abuse reaches the threshold.
+   */
+  const toggleLamp = useCallback(() => {
+    if (bulb !== 'normal') return
+    setLampOn((v) => !v)
+    if (recordToggle(overloadTracker.current, Date.now())) {
+      setBulb('overloading')
+    }
+  }, [bulb])
+
   const resetLamp = useCallback(() => setLampOn(false), [])
   const failWebgl = useCallback(() => setWebglFailed(true), [])
   const changeLanguage = useCallback((lang: Language) => {
@@ -115,6 +177,30 @@ export function ExperienceProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  // Task 7G — replacement drawer / bulb actions
+  const acquireBulb = useCallback(() => setBulbAcquired(true), [])
+  const replaceBulb = useCallback(() => {
+    setBulb((b) => (b === 'burned' ? 'replacing' : b))
+  }, [])
+  const completeOverload = useCallback(() => {
+    setBulb('burned')
+    setLampOn(false)
+    // the room is dark again — the DOM overlay must follow (content recedes)
+    setSceneStage(0)
+  }, [])
+  const completeReplacement = useCallback(() => {
+    setBulb('normal')
+    setBulbAcquired(false)
+    setBulbCarriedState(false)
+    // the spare was installed — the drawer has nothing left to hold
+    setDrawerOpenState(false)
+    resetOverloadTracker(overloadTracker.current)
+    // Task 7G.1 — the reward: the freshly installed bulb turns the lamp on
+    setLampOn(true)
+  }, [])
+  const setDrawerOpen = useCallback((open: boolean) => setDrawerOpenState(open), [])
+  const setBulbCarried = useCallback((carried: boolean) => setBulbCarriedState(carried), [])
+
   // keep the document language in sync for screen readers / styling
   useEffect(() => {
     document.documentElement.lang = language
@@ -125,6 +211,18 @@ export function ExperienceProvider({ children }: { children: ReactNode }) {
       lampOn,
       toggleLamp,
       resetLamp,
+      discoveryComplete,
+      bulb,
+      bulbAcquired,
+      setBulbAcquired,
+      bulbCarried,
+      setBulbCarried,
+      drawerOpen,
+      setDrawerOpen,
+      acquireBulb,
+      replaceBulb,
+      completeOverload,
+      completeReplacement,
       pixelScale,
       setPixelScale,
       reducedMotion,
@@ -150,6 +248,18 @@ export function ExperienceProvider({ children }: { children: ReactNode }) {
       lampOn,
       toggleLamp,
       resetLamp,
+      discoveryComplete,
+      bulb,
+      bulbAcquired,
+      setBulbAcquired,
+      bulbCarried,
+      setBulbCarried,
+      drawerOpen,
+      setDrawerOpen,
+      acquireBulb,
+      replaceBulb,
+      completeOverload,
+      completeReplacement,
       pixelScale,
       reducedMotion,
       webglFailed,

@@ -20,10 +20,10 @@ export function Nav() {
   const { language, setLanguage, t } = useI18n()
 
   const ITEMS = [
-    { id: 'experience', label: t('navExperience') },
-    { id: 'work', label: t('navWork') },
-    { id: 'skills', label: t('navSkills') },
-    { id: 'contact', label: t('navContact') },
+    { id: 'experience', num: '01', label: t('navExperience') },
+    { id: 'work', num: '02', label: t('navWork') },
+    { id: 'skills', num: '03', label: t('navSkills') },
+    { id: 'contact', num: '04', label: t('navContact') },
   ]
 
   useEffect(() => {
@@ -56,8 +56,12 @@ export function Nav() {
             key={item.id}
             href={`#${item.id}`}
             aria-current={active === item.id ? 'true' : undefined}
+            aria-label={item.label}
           >
-            {item.label}
+            <span className="nav-num" aria-hidden="true">
+              {item.num}
+            </span>
+            <span className="nav-label">{item.label}</span>
           </a>
         ))}
         <button

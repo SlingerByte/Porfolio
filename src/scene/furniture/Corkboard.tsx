@@ -7,6 +7,7 @@ import { useContent } from '../../state/useContent'
 import { useI18n } from '../../content/strings'
 import { buildNotes, type NoteSpec } from './boardNotes'
 import { PALETTE } from '../palette'
+import { requestRender } from '../invalidate'
 
 /**
  * Corkboard above the shelf: the Skills anchor point — a PHYSICAL board
@@ -149,10 +150,15 @@ export function Corkboard() {
 
   useEffect(() => {
     const targets = notes.current.filter((m): m is THREE.Mesh => Boolean(m))
+    // P3: notes only exist as renderable objects during the skills beat —
+    // outside it they produce zero draw calls (previously scale-0.01 ghosts).
+    for (const mesh of targets) mesh.visible = active
     if (reducedMotion) {
       for (const mesh of targets) mesh.scale.setScalar(active ? 1 : 0.01)
+      requestRender() // demand primer: instant reveal still needs a frame
       return
     }
+    requestRender() // demand primer: the pin-in/out tweens run on chained frames
     const tweens = targets.map((mesh, i) =>
       gsap.to(mesh.scale, {
         x: active ? 1 : 0.01,

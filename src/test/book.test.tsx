@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, afterEach } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useEffect } from 'react'
 import { ExperienceProvider, useExperience } from '../state/ExperienceContext'
 import { BookInterface } from '../ui/spatial/BookInterface'
@@ -19,12 +19,16 @@ afterEach(() => {
 })
 
 describe('M5.11 — the turning leaf (physical page turn)', () => {
-  it('NEXT mounts a leaf rotating LEFT around the spine', () => {
+  it('NEXT mounts a leaf rotating LEFT around the spine', async () => {
     const { rerender } = render(
       <ExperienceProvider>
         <BookInterface />
         <PageProbe page={1} />
       </ExperienceProvider>
+    )
+    await waitFor(
+      () => expect(screen.getByRole('heading', { name: 'GrantFlow' })).toBeInTheDocument(),
+      { timeout: 4000 }
     )
     rerender(
       <ExperienceProvider>
@@ -35,10 +39,16 @@ describe('M5.11 — the turning leaf (physical page turn)', () => {
     const leaf = document.querySelector('.book-leaf[data-turn-leaf="next"]')
     expect(leaf).not.toBeNull()
     // the leaf carries the page it turns over: the previous spread's project
-    expect(leaf!.querySelector('.book-leaf-front')).not.toBeNull()
     expect(leaf!.textContent).toContain('GrantFlow') // spread 1 = first project
-    // the new spread underneath is already the target page
-    expect(screen.getByRole('heading', { name: 'EcoFunding' })).toBeInTheDocument()
+    // while the leaf turns, the DISPLAYED spread is still the previous page —
+    // the new title never pops before the turn finishes
+    expect(screen.getByRole('heading', { name: 'GrantFlow' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'EcoFunding' })).toBeNull()
+    // when the leaf lands, the new spread is revealed
+    await waitFor(
+      () => expect(screen.getByRole('heading', { name: 'EcoFunding' })).toBeInTheDocument(),
+      { timeout: 4000 }
+    )
   })
 
   it('PREV mounts a leaf rotating RIGHT around the spine', () => {

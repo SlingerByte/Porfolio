@@ -65,7 +65,9 @@ describe('scene config determinism', () => {
     expect([...PIXEL_SCALES]).toEqual([1.0, 0.5, 0.4, 0.34, 0.25])
   })
 
-  it('default pixel scale is the human-approved 0.50 across tiers', () => {
-    expect(getDefaultPixelScale()).toBe(0.5)
+  // Phase 3 invariant: the human-approved default is 1.0 (visual quality
+  // constraint) — the ladder keeps the lower scales for manual/fallback use.
+  it('default pixel scale is the human-approved 1.00 across tiers', () => {
+    expect(getDefaultPixelScale()).toBe(1.0)
   })
 })

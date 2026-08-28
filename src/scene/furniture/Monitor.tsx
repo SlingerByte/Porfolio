@@ -6,6 +6,7 @@ import { useExperience } from '../../state/ExperienceContext'
 import { useI18n } from '../../content/strings'
 import { PALETTE } from '../palette'
 import { SCREEN_EMISSIVE } from '../config'
+import { requestRender } from '../invalidate'
 
 /**
  * Monitor: sole owner of the screen state machine — and of its DIEGETIC
@@ -28,24 +29,24 @@ function drawScreen(lines: string[], accentIndex: number): HTMLCanvasElement {
   canvas.width = SCREEN_W
   canvas.height = SCREEN_H
   const ctx = canvas.getContext('2d')!
-  ctx.fillStyle = '#0d2019'
+  ctx.fillStyle = '#0a1e24'
   ctx.fillRect(0, 0, SCREEN_W, SCREEN_H)
   ctx.textBaseline = 'alphabetic'
   ctx.font = 'bold 20px "Courier New", monospace'
   lines.forEach((line, i) => {
     const y = 40 + i * 28
     if (line.startsWith('$ ') || i === accentIndex) {
-      ctx.fillStyle = '#a9f2d4'
+      ctx.fillStyle = '#a9e6e6'
       ctx.fillText(line.toUpperCase(), 24, y)
     } else {
-      ctx.fillStyle = '#eafff5'
+      ctx.fillStyle = '#e8f4f2'
       ctx.fillText(line, 24, y)
     }
   })
   // block cursor on the last prompt line
   const last = lines.length - 1
   if (lines[last].startsWith('$')) {
-    ctx.fillStyle = '#a9f2d4'
+    ctx.fillStyle = '#a9e6e6'
     ctx.fillRect(24 + ctx.measureText(lines[last]).width + 6, 40 + last * 28 - 18, 12, 20)
   }
   // subtle scanline treatment to match the pixel identity
@@ -107,6 +108,7 @@ export function Monitor() {
   useEffect(() => {
     const material = screenMat.current
     if (!material) return
+    requestRender() // demand primer: the wake/settle sequence runs on chained frames
     const duration = reducedMotion ? 0 : 0.9
 
     material.map = active ? textures.focus : textures.idle
@@ -140,11 +142,13 @@ export function Monitor() {
 
   return (
     <group position={[0.55, 0, -1.12]}>
-      {/* base + neck */}
-      <mesh position={[0, 0.84, 0.04]} castShadow material={bezelMat}>
+      {/* base + neck: base bottom = 0.8325 - 0.035/2 = 0.815 = desk top;
+          neck lowers with the base so the stand stays connected; the panel
+          above is untouched so the screen's framing is preserved */}
+      <mesh position={[0, 0.8325, 0.04]} castShadow material={bezelMat}>
         <boxGeometry args={[0.34, 0.035, 0.24]} />
       </mesh>
-      <mesh position={[0, 1.03, 0]} castShadow material={bezelMat}>
+      <mesh position={[0, 1.0225, 0]} castShadow material={bezelMat}>
         <boxGeometry args={[0.07, 0.34, 0.05]} />
       </mesh>
       {/* panel */}
@@ -183,7 +187,7 @@ export function Monitor() {
         intensity={0.7}
         distance={3.5}
         decay={1.8}
-        color="#3fae85"
+        color="#4398c9"
       />
     </group>
   )

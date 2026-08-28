@@ -3,6 +3,7 @@ import * as THREE from 'three'
 import { gsap } from '../../motion/gsap'
 import { useExperience } from '../../state/ExperienceContext'
 import { PALETTE } from '../palette'
+import { requestRender } from '../invalidate'
 
 /**
  * The studio's resident. Black cat watches the night through the window
@@ -76,7 +77,7 @@ function drawCat(angle: number): HTMLCanvasElement {
   ctx.fill()
 
   // a faint cold rim on the moonlit side — moonlight catching the fur
-  ctx.strokeStyle = 'rgba(120, 150, 190, 0.35)'
+  ctx.strokeStyle = 'rgba(132, 144, 190, 0.35)'
   ctx.lineWidth = 2
   ctx.beginPath()
   ctx.moveTo(83, 140)
@@ -145,6 +146,7 @@ export function BlackCat() {
         .to(obj, { angle: 0.95, duration: 0.4, ease: 'sine.inOut' })
         .to(obj, { angle: -0.95, duration: 0.9, ease: 'sine.inOut' })
         .to(obj, { angle: 0, duration: 0.45, ease: 'sine.inOut' })
+      requestRender() // demand primer: the swish is timer-started, wake a frame
     }
 
     const schedule = () => {
@@ -166,12 +168,8 @@ export function BlackCat() {
     }
   }, [reducedMotion, applyTail])
 
-  const hover = () => {
-    document.body.style.cursor = 'pointer'
-  }
-  const unhover = () => {
-    document.body.style.cursor = 'auto'
-  }
+  // the cat is a resident, not a control — no pointer affordance (Phase 4:
+  // a pointer cursor here was a false affordance; there is nothing to click)
 
   return (
     <group position={[-2.7, 1.535, -1.87]}>
@@ -181,7 +179,7 @@ export function BlackCat() {
         <meshBasicMaterial color="#05070c" transparent opacity={0.45} depthWrite={false} />
       </mesh>
       {/* the cat — a pixel silhouette against the moon pane */}
-      <mesh ref={meshRef} onPointerOver={hover} onPointerOut={unhover}>
+      <mesh ref={meshRef}>
         <planeGeometry args={[0.5, 0.69]} />
         <meshStandardMaterial
           map={initialTex}

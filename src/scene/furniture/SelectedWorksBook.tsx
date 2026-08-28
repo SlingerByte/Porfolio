@@ -8,6 +8,7 @@ import { useI18n } from '../../content/strings'
 import { useBookPage } from '../../state/book'
 import { workSectionProgress, type SectionSpan } from '../../state/narrative'
 import { PALETTE } from '../palette'
+import { requestRender } from '../invalidate'
 
 /**
  * "Selected Projects — Emilson Oviedo": the narrative container of the
@@ -25,8 +26,13 @@ import { PALETTE } from '../palette'
  *               shut over the left like a book closing
  */
 
-const SPREAD_W = 512 // M5.11: 256 -> 512 (definition pass; pixel scale untouched)
-const SPREAD_H = 352
+/** Task 7D: page textures are intentionally LOW-RES and NearestFiltered —
+    the coarse, blocky pixel-art paper (Minecraft-book-inspired visual
+    language, not a copy). The readable content lives in the DOM reading
+    interface, so the diegetic page faces are chunky on purpose. 160×220
+    keeps the diegetic project names readable while still clearly blocky. */
+const PAGE_W = 160
+const PAGE_H = 220
 
 interface Spread {
   title: string
@@ -35,6 +41,17 @@ interface Spread {
 
 /** resting z of the closed book on the upper shelf */
 const SHELF_Z = -1.88
+
+/**
+ * Y offset of the closed book (relative to its group origin) so its visible
+ * near bottom edge rests on the shelf board's top surface. Derived from the
+ * geometry: book half-height 0.335/2 = 0.1675, near-edge lean dip
+ * sin(0.05 rad) * (0.205/2) ≈ 0.0051, shelf board top = 1.78 + 0.06/2 = 1.81,
+ * book group origin y = 2.02 → 2.02 + y − 0.1675 − 0.0051 = 1.81 → y ≈ −0.048.
+ * The far bottom edge dips ~1 cm into the board top but is occluded by the
+ * book against the dark back panel.
+ */
+const CLOSED_REST_Y = -0.048
 
 /**
  * Reading progress at which the book opens (scrolling down) vs. the lower
@@ -128,78 +145,93 @@ function useBookApproached(enabled: boolean): boolean {
   return approached
 }
 
+/** Cream paper base for the LEFT page: fibers + blocky grain + a shadow at
+    the SPINE edge (the right side of the left page). Drawn once, low-res,
+    NearestFiltered. */
+function drawPaper(): HTMLCanvasElement {
+  const canvas = document.createElement('canvas')
+  canvas.width = PAGE_W
+  canvas.height = PAGE_H
+  const ctx = canvas.getContext('2d')!
+  ctx.fillStyle = '#f0e6d0'
+  ctx.fillRect(0, 0, PAGE_W, PAGE_H)
+  // faint horizontal fibers
+  ctx.fillStyle = 'rgba(180, 160, 130, 0.07)'
+  for (let y = 0; y < PAGE_H; y += 4) ctx.fillRect(0, y, PAGE_W, 1)
+  // deterministic blocky grain — staggered 2×2 specks
+  ctx.fillStyle = 'rgba(120, 95, 60, 0.05)'
+  for (let y = 8; y < PAGE_H; y += 16) {
+    const off = y % 32 < 16 ? 0 : 12
+    for (let x = 6 + off; x < PAGE_W; x += 24) ctx.fillRect(x, y, 2, 2)
+  }
+  // spine-edge shadow at the RIGHT (the binding side of the left page)
+  const gutter = ctx.createLinearGradient(PAGE_W - 18, 0, PAGE_W, 0)
+  gutter.addColorStop(0, 'rgba(80, 60, 30, 0)')
+  gutter.addColorStop(1, 'rgba(80, 60, 30, 0.28)')
+  ctx.fillStyle = gutter
+  ctx.fillRect(PAGE_W - 18, 0, 18, PAGE_H)
+  return canvas
+}
+
+/** One diegetic project page: blocky pixel-art title + ruled rows over the
+    same paper base. The spread texture is the RIGHT page of the open book
+    (the left page uses drawPaper). */
 function drawSpread(spread: Spread, rows: string[]): HTMLCanvasElement {
   const canvas = document.createElement('canvas')
-  canvas.width = SPREAD_W
-  canvas.height = SPREAD_H
+  canvas.width = PAGE_W
+  canvas.height = PAGE_H
   const ctx = canvas.getContext('2d')!
 
-  // paper: warm cream with subtle fiber texture
+  // paper base
   ctx.fillStyle = '#f0e6d0'
-  ctx.fillRect(0, 0, SPREAD_W, SPREAD_H)
-  // faint horizontal fibers
-  ctx.fillStyle = 'rgba(180, 160, 130, 0.08)'
-  for (let y = 0; y < SPREAD_H; y += 4) {
-    ctx.fillRect(0, y, SPREAD_W, 1)
+  ctx.fillRect(0, 0, PAGE_W, PAGE_H)
+  ctx.fillStyle = 'rgba(180, 160, 130, 0.07)'
+  for (let y = 0; y < PAGE_H; y += 4) ctx.fillRect(0, y, PAGE_W, 1)
+  ctx.fillStyle = 'rgba(120, 95, 60, 0.05)'
+  for (let y = 8; y < PAGE_H; y += 16) {
+    const off = y % 32 < 16 ? 0 : 12
+    for (let x = 6 + off; x < PAGE_W; x += 24) ctx.fillRect(x, y, 2, 2)
   }
-
-  // center gutter shadow — deeper, more physical
-  const gutter = ctx.createLinearGradient(SPREAD_W / 2 - 24, 0, SPREAD_W / 2 + 24, 0)
-  gutter.addColorStop(0, 'rgba(80,60,30,0)')
-  gutter.addColorStop(0.4, 'rgba(80,60,30,0.22)')
-  gutter.addColorStop(0.5, 'rgba(60,44,20,0.35)')
-  gutter.addColorStop(0.6, 'rgba(80,60,30,0.22)')
-  gutter.addColorStop(1, 'rgba(80,60,30,0)')
+  // spine-edge shadow (left, the binding side of the right page)
+  const gutter = ctx.createLinearGradient(0, 0, 18, 0)
+  gutter.addColorStop(0, 'rgba(80, 60, 30, 0.3)')
+  gutter.addColorStop(1, 'rgba(80, 60, 30, 0)')
   ctx.fillStyle = gutter
-  ctx.fillRect(SPREAD_W / 2 - 24, 0, 48, SPREAD_H)
+  ctx.fillRect(0, 0, 18, PAGE_H)
 
-  // outer edge shadows — book block thickness
-  ctx.fillStyle = 'rgba(80,60,30,0.12)'
-  ctx.fillRect(0, 0, 6, SPREAD_H)
-  ctx.fillRect(SPREAD_W - 6, 0, 6, SPREAD_H)
-
-  // title
+  // title — chunky blocky letters, readable (the project name must be seen)
   ctx.fillStyle = '#3d2c18'
   ctx.textAlign = 'center'
-  ctx.font = 'bold 32px Georgia, serif'
-  ctx.fillText(spread.title, SPREAD_W / 2, 78)
-
+  ctx.font = 'bold 20px "Courier New", monospace'
+  ctx.fillText(spread.title, PAGE_W / 2, 42)
   // subtitle
-  ctx.font = '15px "Courier New", monospace'
+  ctx.font = '9px "Courier New", monospace'
   ctx.fillStyle = '#7a5c33'
-  ctx.fillText(spread.subtitle, SPREAD_W / 2, 108)
-
-  // decorative rule
+  ctx.fillText(spread.subtitle, PAGE_W / 2, 56)
+  // gold rule
   ctx.fillStyle = '#c9973f'
-  ctx.fillRect(SPREAD_W / 2 - 40, 124, 80, 1.5)
+  ctx.fillRect(PAGE_W / 2 - 18, 62, 36, 1)
   ctx.fillStyle = 'rgba(160, 120, 50, 0.4)'
-  ctx.fillRect(SPREAD_W / 2 - 30, 129, 60, 1)
+  ctx.fillRect(PAGE_W / 2 - 14, 66, 28, 1)
 
-  // abstract body: labeled rows with ruled placeholder lines
+  // ruled body lines
   ctx.textAlign = 'left'
   rows.forEach((row, i) => {
-    const y = 168 + i * 42
+    const y = 82 + i * 24
     ctx.fillStyle = '#8a6a3e'
-    ctx.font = 'bold 13px "Courier New", monospace'
-    ctx.fillText(row, 48, y)
-    // ruled lines
-    ctx.strokeStyle = 'rgba(70,52,30,0.3)'
-    ctx.lineWidth = 1.5
+    ctx.font = 'bold 8px "Courier New", monospace'
+    ctx.fillText(row, 14, y)
+    ctx.strokeStyle = 'rgba(70, 52, 30, 0.3)'
+    ctx.lineWidth = 1
     ctx.beginPath()
-    ctx.moveTo(160, y - 4)
-    ctx.lineTo(SPREAD_W - 48, y - 4)
+    ctx.moveTo(52, y - 3)
+    ctx.lineTo(PAGE_W - 12, y - 3)
     ctx.stroke()
     ctx.beginPath()
-    ctx.moveTo(160, y + 8)
-    ctx.lineTo(SPREAD_W - 100 - i * 24, y + 8)
+    ctx.moveTo(52, y + 5)
+    ctx.lineTo(PAGE_W - 26 - i * 12, y + 5)
     ctx.stroke()
   })
-
-  // folio hint at bottom right
-  ctx.fillStyle = 'rgba(120, 90, 50, 0.35)'
-  ctx.font = '11px "Courier New", monospace'
-  ctx.textAlign = 'right'
-  ctx.fillText('— ◆ —', SPREAD_W - 48, SPREAD_H - 24)
 
   return canvas
 }
@@ -207,6 +239,10 @@ function drawSpread(spread: Spread, rows: string[]): HTMLCanvasElement {
 function makeTexture(canvas: HTMLCanvasElement): THREE.CanvasTexture {
   const texture = new THREE.CanvasTexture(canvas)
   texture.colorSpace = THREE.SRGBColorSpace
+  // Task 7D: pixel-art identity — nearest upscale, like the monitor, corkboard
+  // and cat textures. The readable project content lives in the DOM reading
+  // interface, so the diegetic book faces are intentionally low-res/blocky.
+  texture.magFilter = THREE.NearestFilter
   return texture
 }
 
@@ -322,6 +358,19 @@ export function SelectedWorksBook() {
     ctx.fillStyle = 'rgba(201, 151, 63, 0.18)'
     ctx.fillRect(0, 0, 8, 448)
 
+    // Task 7D: blocky bevel + faint wear — voxel-ish cover depth without
+    // looking like a clean card: dark right/bottom edge, light top-left,
+    // and a couple of small artisanal marks.
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.16)'
+    ctx.fillRect(244, 0, 12, 448)
+    ctx.fillRect(0, 434, 256, 14)
+    ctx.fillStyle = 'rgba(255, 240, 210, 0.07)'
+    ctx.fillRect(0, 0, 10, 448)
+    ctx.fillRect(0, 0, 256, 10)
+    ctx.fillStyle = 'rgba(50, 32, 16, 0.10)'
+    ctx.fillRect(52, 428, 22, 8)
+    ctx.fillRect(188, 240, 12, 6)
+
     return makeTexture(canvas)
   }, [t])
 
@@ -390,6 +439,10 @@ export function SelectedWorksBook() {
     return makeTexture(canvas)
   }, [])
 
+  // the left open page's paper surface (the right page carries the project
+  // spread texture) — same cream grain as the spread
+  const paperTexture = useMemo(() => makeTexture(drawPaper()), [])
+
   // one spread per project — subtitles follow the current language
   const spreads = useMemo(
     () =>
@@ -419,8 +472,9 @@ export function SelectedWorksBook() {
       spineTexture.dispose()
       pageEdgesTexture.dispose()
       spreadTextures.forEach((t) => t.dispose())
+      paperTexture.dispose()
     },
-    [coverTexture, spineTexture, pageEdgesTexture, spreadTextures]
+    [coverTexture, spineTexture, pageEdgesTexture, spreadTextures, paperTexture]
   )
 
   // slide out of the shelf when presented; return when the story moves on
@@ -428,6 +482,7 @@ export function SelectedWorksBook() {
     const g = closedGroup.current
     if (!g) return
     const target = {
+      y: active ? 0 : CLOSED_REST_Y, // presented slides out level; shelved rests on the board
       z: active ? SHELF_Z + 0.16 : SHELF_Z,
       rx: active ? -0.12 : -0.05,
       ry: active ? 0.22 : 0,
@@ -435,10 +490,11 @@ export function SelectedWorksBook() {
     }
     const duration = reducedMotion ? 0 : 1.1
     const tweens = [
-      gsap.to(g.position, { z: target.z, duration, ease: 'power2.inOut' }),
+      gsap.to(g.position, { y: target.y, z: target.z, duration, ease: 'power2.inOut' }),
       gsap.to(g.rotation, { x: target.rx, y: target.ry, duration, ease: 'power2.inOut' }),
       gsap.to(g.scale, { x: target.s, y: target.s, z: target.s, duration, ease: 'power2.inOut' }),
     ]
+    requestRender() // demand primer: presentation/shelving runs on chained frames
     return () => tweens.forEach((t) => t.kill())
   }, [active, reducedMotion])
 
@@ -460,6 +516,7 @@ export function SelectedWorksBook() {
     const closed = closedGroup.current
     const opened = openGroup.current
     if (!closed || !opened) return
+    requestRender() // demand primer: opening/closing/page-turn run on chained frames
 
     // whenever the book is open, its right page lies flat (never half-folded
     // from an interrupted close) and any in-flight close is abandoned
@@ -514,9 +571,9 @@ export function SelectedWorksBook() {
         closed.visible = true
       } else if (!closing.current) {
         // the closed cover waits near the open book, then retreats to the shelf
-        const present = { z: SHELF_Z + 0.16, rx: -0.12, ry: 0.22, s: 1.15 }
-        const shelf = { z: SHELF_Z, rx: -0.05, ry: 0, s: 1 }
-        closed.position.set(0, 0, present.z)
+        const present = { y: 0, z: SHELF_Z + 0.16, rx: -0.12, ry: 0.22, s: 1.15 }
+        const shelf = { y: CLOSED_REST_Y, z: SHELF_Z, rx: -0.05, ry: 0, s: 1 }
+        closed.position.set(0, present.y, present.z)
         closed.rotation.set(present.rx, present.ry, 0)
         closed.scale.setScalar(present.s)
 
@@ -538,7 +595,7 @@ export function SelectedWorksBook() {
           closed.visible = true
           opened.visible = false
         }, [], 0.45)
-        tl.to(closed.position, { z: shelf.z, duration: 0.7, ease: 'power2.inOut' }, 0.45)
+        tl.to(closed.position, { y: shelf.y, z: shelf.z, duration: 0.7, ease: 'power2.inOut' }, 0.45)
         tl.to(closed.rotation, { x: shelf.rx, y: shelf.ry, z: 0, duration: 0.7, ease: 'power2.inOut' }, 0.45)
         tl.to(closed.scale, { x: shelf.s, y: shelf.s, z: shelf.s, duration: 0.7, ease: 'power2.inOut' }, 0.45)
       }
@@ -568,7 +625,7 @@ export function SelectedWorksBook() {
   return (
     <group position={[1.06, 2.02, 0]}>
       {/* closed hardcover (shelved / presented-cover states) — slight natural lean */}
-      <group ref={closedGroup} position={[0, 0, SHELF_Z]} rotation={[0.04, 0, -0.07]}>
+      <group ref={closedGroup} position={[0, CLOSED_REST_Y, SHELF_Z]} rotation={[0.04, 0, -0.07]}>
         {/* inner page block — page edges visible on the right side */}
         <mesh castShadow receiveShadow>
           <boxGeometry args={[0.13, 0.32, 0.185]} />
@@ -599,7 +656,7 @@ export function SelectedWorksBook() {
 
       {/* open spread (reading state) */}
       <group ref={openGroup} position={[0.09, 0.03, -1.62]} rotation={[0, 0, -0.04]} visible={false}>
-        {/* left page */}
+        {/* left page — cream pixel paper */}
         <mesh
           castShadow
           position={[-0.126, 0, 0]}
@@ -609,7 +666,7 @@ export function SelectedWorksBook() {
           onClick={openCaseStudy}
         >
           <planeGeometry args={[0.25, 0.34]} />
-          <meshStandardMaterial color="#f0e6d0" roughness={0.88} side={THREE.DoubleSide} />
+          <meshStandardMaterial map={paperTexture} color="#ffffff" roughness={0.88} side={THREE.DoubleSide} />
         </mesh>
         {/* right page (carries the current project's face texture), hinged at
             the spine so it can fold shut over the left page on close */}
@@ -627,7 +684,7 @@ export function SelectedWorksBook() {
             <meshStandardMaterial map={null} roughness={0.85} side={THREE.DoubleSide} />
           </mesh>
         </group>
-        {/* spine */}
+        {/* front binding line at the gutter */}
         <mesh position={[0, 0, -0.004]}>
           <boxGeometry args={[0.02, 0.345, 0.01]} />
           <meshStandardMaterial color="#9a6540" roughness={0.6} metalness={0.05} />

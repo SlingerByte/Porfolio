@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useExperience } from '../../state/ExperienceContext'
 import { useContent } from '../../state/useContent'
 import { useI18n } from '../../content/strings'
@@ -36,21 +36,34 @@ export function BookInterface({ onClose }: BookInterfaceProps) {
   const { projects } = useContent()
   const { t } = useI18n()
   const bookPage = useBookPage()
-  const isIntro = bookPage === 0
-  const project = bookPage >= 1 ? projects[bookPage - 1] : null
+  // the page actually SHOWN. During a turn the previous spread stays fully
+  // rendered (same paper, no fade, no empty frames); the new spread appears
+  // only when the turning leaf lands, so the title never pops early.
+  const [displayPage, setDisplayPage] = useState(bookPage)
+  const isIntro = displayPage === 0
+  const project = displayPage >= 1 ? projects[displayPage - 1] : null
   const spreadRef = useRef<HTMLDivElement>(null)
 
-  // the turning leaf: mounted only while the page-change animation plays
+  // the turning leaf: mounted only while the page-change animation plays.
+  // The DISPLAYED page is held until the leaf completes, then swaps.
   const [leaf, setLeaf] = useState<Leaf | null>(null)
   const prevPage = useRef(bookPage)
   useEffect(() => {
     const from = prevPage.current
     if (bookPage === from) return undefined
     prevPage.current = bookPage
-    if (reducedMotion) return undefined
+    if (reducedMotion) {
+      setDisplayPage(bookPage) // no leaf under reduced motion — swap at once
+      return undefined
+    }
     setLeaf({ dir: bookPage > from ? 'next' : 'prev', fromPage: from, seq: Date.now() })
     return undefined
   }, [bookPage, reducedMotion])
+
+  const finishTurn = useCallback(() => {
+    setLeaf(null)
+    setDisplayPage(bookPage) // reveal the new spread as the leaf settles
+  }, [bookPage])
 
   // scroll past the final page closes the book — CLOSE stays as an
   // explicit affordance, but it is never mandatory
@@ -72,7 +85,7 @@ export function BookInterface({ onClose }: BookInterfaceProps) {
           <div
             ref={spreadRef}
             className="book-ui-spread"
-            key={bookPage}
+            key={displayPage}
             data-turn={leaf?.dir}
             tabIndex={0}
             role="region"
@@ -84,8 +97,8 @@ export function BookInterface({ onClose }: BookInterfaceProps) {
           >
             {project ? (
               <>
-                <LeftPage project={project} page={bookPage} />
-                <RightPage project={project} page={bookPage} />
+                <LeftPage project={project} page={displayPage} />
+                <RightPage project={project} page={displayPage} />
               </>
             ) : (
               <>
@@ -98,7 +111,7 @@ export function BookInterface({ onClose }: BookInterfaceProps) {
 
           {/* the physical leaf: front carries the page being turned over,
               back is paper — it rotates around the spine and vanishes */}
-          {leaf && <LeafElement key={leaf.seq} leaf={leaf} onDone={() => setLeaf(null)} />}
+          {leaf && <LeafElement key={leaf.seq} leaf={leaf} onDone={finishTurn} />}
         </div>
       </div>
 
@@ -129,16 +142,16 @@ function LeafElement({ leaf, onDone }: { leaf: Leaf; onDone: () => void }) {
     const tl = gsap.timeline({ onComplete: onDone })
     // the paper swishes as it lifts
     tl.call(() => playPageTurn(), [], 0)
-    // phase 1 — the page peels off the stack: hinge turns while the free
-    // edge lifts and bows toward the reader
+    // phase 1 — the page pivots AROUND the spine hinge with a hint of paper bow,
+    // no forward translation (it never detaches from the binding)
     tl.fromTo(
       el,
       { rotateY: 0, rotateZ: 0, rotateX: 0, z: 0 },
       {
-        rotateY: forward ? -96 : 96,
-        rotateZ: forward ? 7 : -7,
-        rotateX: forward ? -5 : 5,
-        z: 7,
+        rotateY: forward ? -90 : 90,
+        rotateZ: forward ? 2 : -2,
+        rotateX: forward ? -2 : 2,
+        z: 0,
         duration: 0.34,
         ease: 'power2.in',
       }
@@ -151,7 +164,7 @@ function LeafElement({ leaf, onDone }: { leaf: Leaf; onDone: () => void }) {
           rotateZ: 0,
           rotateX: 0,
           z: 0,
-          duration: 0.46,
+          duration: 0.55,
           ease: 'power2.inOut',
         },
         0.34
@@ -160,7 +173,7 @@ function LeafElement({ leaf, onDone }: { leaf: Leaf; onDone: () => void }) {
     // flattens as the page lands — this is what sells "a real page"
     if (bend) {
       tl.fromTo(bend, { opacity: 0 }, { opacity: 0.7, duration: 0.32, ease: 'sine.out' }, 0.06)
-      tl.to(bend, { opacity: 0, duration: 0.3, ease: 'sine.in' }, 0.46)
+      tl.to(bend, { opacity: 0, duration: 0.3, ease: 'sine.in' }, 0.55)
     }
     return () => {
       tl.kill()

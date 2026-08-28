@@ -32,6 +32,20 @@
   bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
   pointer-events: auto;
+  /* Phase 4: the docked action rises in gently when a beat settles — a
+     small, consistent entrance instead of a button popping into view */
+  animation: room-affordance-in 340ms ease-out both;
+}
+
+@keyframes room-affordance-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 }
 
 .room-affordance-btn {
@@ -54,6 +68,106 @@
   filter: brightness(1.15);
   outline: var(--focus-ring);
   outline-offset: 3px;
+}
+
+/* ---------------- Task 7H — light-first discovery gate ----------------
+   A small room-integrated note (never a modal): it points at the lamp cord
+   and explains why the room won't let you scroll yet. Non-interactive
+   (pointer-events none) so it never blocks the cord or the scene. */
+
+.light-gate {
+  position: absolute;
+  pointer-events: none;
+  z-index: calc(var(--z-overlay) + 2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 16px 12px;
+  color: var(--text-primary);
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgba(255, 179, 92, 0.14), transparent 60%),
+    linear-gradient(180deg, rgba(18, 14, 10, 0.9), rgba(10, 8, 6, 0.86));
+  border: 1px solid rgba(245, 167, 66, 0.4);
+  border-radius: var(--radius-md);
+  box-shadow:
+    inset 0 0 0 1px rgba(245, 167, 66, 0.06),
+    0 14px 34px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  text-align: center;
+  animation: light-gate-in 420ms ease-out both;
+}
+
+/* picture-frame corner brackets — the room's environmental note language */
+.light-gate::before,
+.light-gate::after {
+  content: '';
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  pointer-events: none;
+}
+
+.light-gate::before {
+  top: 5px;
+  left: 5px;
+  border-top: 1px solid rgba(245, 167, 66, 0.5);
+  border-left: 1px solid rgba(245, 167, 66, 0.5);
+}
+
+.light-gate::after {
+  bottom: 5px;
+  right: 5px;
+  border-bottom: 1px solid rgba(245, 167, 66, 0.5);
+  border-right: 1px solid rgba(245, 167, 66, 0.5);
+}
+
+@keyframes light-gate-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* the hand-drawn up-arrow toward the cord: a gentle, low-frequency bob */
+.light-gate-arrow {
+  width: 20px;
+  height: 20px;
+  fill: rgba(255, 217, 160, 0.95);
+  filter: drop-shadow(0 0 6px rgba(255, 179, 92, 0.45));
+  animation: light-gate-bob 1.6s ease-in-out infinite;
+}
+
+@keyframes light-gate-bob {
+  0%,
+  100% {
+    transform: translateY(2px);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.light-gate-text {
+  font-family: var(--font-body);
+  font-size: var(--text-size-sm);
+  line-height: 1.5;
+  color: var(--text-secondary);
+  max-width: 34ch;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .light-gate {
+    animation: none;
+  }
+
+  .light-gate-arrow {
+    animation: none;
+  }
 }
 
 /* ---------------- monitor focus — terminal reading interface ---------- */
@@ -285,7 +399,7 @@
   font-family: var(--font-mono);
   font-size: 13px;
   line-height: 1.6;
-  color: rgba(143, 230, 198, 0.85);
+  color: rgba(160, 220, 214, 0.85);
   white-space: pre-wrap;
 }
 
@@ -316,23 +430,11 @@
   font-family: var(--font-body);
   text-align: left;
   position: relative;
-  /* dark reading desk — the book sits on this surface */
-  background:
-    /* subtle desk texture — faint wood grain */
-    repeating-linear-gradient(80deg,
-      rgba(80, 55, 25, 0.03) 0 1px, transparent 1px 6px),
-    repeating-linear-gradient(170deg,
-      rgba(60, 40, 18, 0.02) 0 2px, transparent 2px 8px),
-    radial-gradient(ellipse at 50% 60%, #1e150d 0%, #13100a 100%);
+  /* no background at all — the book floats over the scene, no card/desk */
 }
 
 .book-ui--focus {
-  background:
-    repeating-linear-gradient(80deg,
-      rgba(80, 55, 25, 0.03) 0 1px, transparent 1px 6px),
-    repeating-linear-gradient(170deg,
-      rgba(60, 40, 18, 0.02) 0 2px, transparent 2px 8px),
-    radial-gradient(ellipse at 50% 60%, #1e150d 0%, #13100a 100%);
+  /* no background — the book floats over the scene */
 }
 
 /* floating controls sit on the desk surface alongside the book */
@@ -406,7 +508,8 @@
   transform-style: preserve-3d;
 }
 
-/* the spread: a physical open book with page curvature */
+/* the spread: a physical open book — Minecraft-book cover frame (blocky
+   leather border), hard stepped drop shadow, pixel paper inside */
 .book-ui-spread {
   position: absolute;
   inset: 0;
@@ -416,34 +519,19 @@
   overflow-x: hidden;
   scrollbar-width: thin;
   scrollbar-color: rgba(122, 92, 51, 0.35) transparent;
-  /* paper base — warm ivory */
+  /* blocky leather cover frame around the open pages */
   background: #f0e8d2;
-  /* the book block: stacked page edges on all four sides + desk shadow */
+  border: 7px solid #5a3a22;
+  border-bottom-width: 9px;
+  /* hard, stepped, pixel-ish drop shadow over the dark desk */
   box-shadow:
-    /* page block — top edge */
-    0 -4px 0 -1px rgba(96, 74, 40, 0.22),
-    0 -3px 0 -1px rgba(200, 185, 155, 0.65),
-    0 -2px 0 -1px rgba(96, 74, 40, 0.18),
-    0 -1px 0 -1px rgba(200, 185, 155, 0.5),
-    /* page block — bottom edge */
-    0 2px 0 -1px rgba(200, 185, 155, 0.65),
-    0 3px 0 -1px rgba(96, 74, 40, 0.22),
-    /* page block — left and right */
-    -4px 0 0 -1px rgba(96, 74, 40, 0.25),
-    -3px 0 0 0 rgba(200, 185, 155, 0.6),
-    -2px 0 0 0 rgba(96, 74, 40, 0.2),
-    -1px 0 0 0 rgba(200, 185, 155, 0.5),
-    4px 0 0 -1px rgba(96, 74, 40, 0.25),
-    3px 0 0 0 rgba(200, 185, 155, 0.6),
-    2px 0 0 0 rgba(96, 74, 40, 0.2),
-    1px 0 0 0 rgba(200, 185, 155, 0.5),
-    /* projected shadow on the dark desk surface */
-    0 18px 36px rgba(0, 0, 0, 0.55),
-    0 6px 14px rgba(0, 0, 0, 0.35),
-    0 1px 3px rgba(0, 0, 0, 0.4);
-  /* the volume leans back on the desk, pages open toward the reader */
-  transform: rotateX(4deg);
-  transform-origin: 50% 100%;
+    0 0 0 2px #2a1a0d,
+    0 4px 0 0 #2a1a0d,
+    0 8px 0 0 rgba(0, 0, 0, 0.34),
+    0 14px 0 0 rgba(0, 0, 0, 0.16),
+    0 24px 48px rgba(0, 0, 0, 0.5);
+  /* NOTE: no 3D rotateX lean here — a preserve-3d tilt would push the lower
+     pages behind the volume plane and make the REPO links unclickable */
 }
 
 .book-ui-spread:focus-visible {
@@ -451,24 +539,14 @@
   outline-offset: -4px;
 }
 
-/* each page: a real opaque sheet with paper texture */
+/* each page: a clean ivory sheet — no gridded texture and NO opacity fade
+   on page changes, so the pages always keep the same visible paper (the new
+   content is revealed by the turning leaf itself) */
 .book-page {
   position: relative;
   padding: clamp(18px, 2.5vh, 32px) clamp(18px, 2.2vw, 30px);
   min-width: 0;
-  /* paper with realistic grain — fiber lines + subtle tone variation */
-  background:
-    /* fine horizontal fiber lines */
-    repeating-linear-gradient(0deg,
-      rgba(140, 110, 60, 0.03) 0 1px, transparent 1px 3px),
-    /* subtle vertical texture variation */
-    repeating-linear-gradient(90deg,
-      rgba(120, 95, 50, 0.015) 0 2px, transparent 2px 7px),
-    /* very faint age spots / tonal variation */
-    radial-gradient(ellipse at 30% 70%, rgba(180, 150, 90, 0.06) 0%, transparent 50%),
-    radial-gradient(ellipse at 70% 30%, rgba(160, 130, 70, 0.04) 0%, transparent 40%),
-    /* base warm ivory */
-    linear-gradient(175deg, #f2ead8 0%, #ede2c8 40%, #e8dcbe 100%);
+  background: linear-gradient(175deg, #f2ead8 0%, #ede2c8 40%, #e8dcbe 100%);
 }
 
 /* stacked page edges on the outer sides — the block of pages under the
@@ -533,9 +611,10 @@
   transform: rotateY(2deg);
   transform-origin: right center;
   box-shadow:
-    /* gutter shadow — deep binding valley on the right edge */
-    inset -24px 0 30px -14px rgba(35, 22, 8, 0.5),
-    inset -3px 0 0 rgba(35, 22, 8, 0.15),
+    /* gutter shadow — blocky binding valley on the right edge (hard steps) */
+    inset -20px 0 0 0 rgba(35, 22, 8, 0.22),
+    inset -10px 0 0 0 rgba(35, 22, 8, 0.12),
+    inset -3px 0 0 rgba(35, 22, 8, 0.18),
     /* left edge page curl — lifts toward the reader */
     inset 8px 0 12px -6px rgba(35, 22, 8, 0.08),
     /* outer edge highlight — page lifts off the desk */
@@ -549,9 +628,10 @@
   transform: rotateY(-2deg);
   transform-origin: left center;
   box-shadow:
-    /* gutter shadow — deep binding valley on the left edge */
-    inset 24px 0 30px -14px rgba(35, 22, 8, 0.5),
-    inset 3px 0 0 rgba(35, 22, 8, 0.15),
+    /* gutter shadow — blocky binding valley on the left edge (hard steps) */
+    inset 20px 0 0 0 rgba(35, 22, 8, 0.22),
+    inset 10px 0 0 0 rgba(35, 22, 8, 0.12),
+    inset 3px 0 0 rgba(35, 22, 8, 0.18),
     /* right edge page curl — lifts toward the reader */
     inset -8px 0 12px -6px rgba(35, 22, 8, 0.08),
     /* outer edge highlight — page lifts off the desk */
@@ -564,26 +644,17 @@
   top: 0;
   bottom: 0;
   left: 50%;
-  width: 32px;
+  width: 30px;
   transform: translateX(-50%);
   z-index: 1;
-  /* deep binding crease — darker center, softer edges */
-  background: linear-gradient(90deg,
-    rgba(35, 22, 8, 0) 0%,
-    rgba(35, 22, 8, 0.15) 20%,
-    rgba(30, 18, 6, 0.45) 45%,
-    rgba(25, 15, 5, 0.6) 50%,
-    rgba(30, 18, 6, 0.45) 55%,
-    rgba(35, 22, 8, 0.15) 80%,
-    rgba(35, 22, 8, 0) 100%);
-  /* thin binding thread lines */
-  border-left: 1px solid rgba(80, 55, 25, 0.12);
-  border-right: 1px solid rgba(80, 55, 25, 0.12);
-  pointer-events: none;
-  /* subtle凹陷 */
+  /* blocky leather binding column (Minecraft spine) — solid, hard-edged */
+  background: #5a3a22;
+  border-left: 3px solid #3a2515;
+  border-right: 3px solid #3a2515;
   box-shadow:
-    inset 0 0 8px rgba(30, 18, 6, 0.3),
-    0 0 4px rgba(30, 18, 6, 0.15);
+    inset 0 0 0 1px rgba(255, 220, 180, 0.07),
+    0 0 0 1px rgba(20, 10, 4, 0.5);
+  pointer-events: none;
 }
 
 /* ---------------- the turning leaf (M5.11): a real page turn ----------- */
@@ -621,11 +692,8 @@
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   overflow: hidden;
-  /* M7.2: paper grain on the turning leaf */
-  background:
-    repeating-linear-gradient(0deg,
-      rgba(140, 110, 60, 0.025) 0 1px, transparent 1px 4px),
-    linear-gradient(#f0e6d0, #e8dcc0);
+  /* clean paper on the turning leaf */
+  background: linear-gradient(#f0e6d0, #e8dcc0);
 }
 
 /* the paper bows through the air: a curvature gradient that swells as the
@@ -711,6 +779,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .book-leaf-front::after { animation: none; opacity: 0; }
+  .book-page { animation: none; }
 }
 
 .book-kicker {
@@ -823,6 +892,8 @@
 
 .book-links a {
   display: inline-block;
+  position: relative;
+  z-index: 1;
   margin-top: 6px;
   margin-right: 6px;
   padding: 5px 12px;
@@ -1439,12 +1510,13 @@
 /* M7.3: book panel — the book object on a dark desk, no card frame */
 .spatial-focused-panel[data-focus-panel="book"] {
   border-radius: 0;
-  aspect-ratio: 1.65 / 1;
+  aspect-ratio: 1.62 / 1;
   max-height: min(calc(100vh - var(--focus-top-min) - var(--focus-bottom-min) - 12px), 800px);
   max-height: min(calc(100dvh - var(--focus-top-min) - var(--focus-bottom-min) - 12px), 800px);
-  /* the panel IS the desk surface — dark, not a card */
+  /* the warm desk lives in .book-ui; the panel stays transparent so the FLIP
+     grows out of the scene book without a dark rectangle behind it */
   background: transparent;
-  box-shadow: none;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
 }
 
 .spatial-focused-panel > * {
@@ -1455,6 +1527,7 @@
 @media (prefers-reduced-motion: reduce) {
   .spatial-scrim { animation: none; }
   .spatial-focused-panel { transition: none; }
+  .room-affordance { animation: none; }
 }
 
 /* mobile: touch targets never below 44px */

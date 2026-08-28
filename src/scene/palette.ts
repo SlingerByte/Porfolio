@@ -24,8 +24,8 @@ export const PALETTE = {
 
   // monitor / tech
   bezel: '#14100c',
-  screenBase: '#12291f',
-  phosphor: '#2f6b57',
+  screenBase: '#10212b',
+  phosphor: '#2b6d76',
 
   // accents
   brass: '#c9973f',
